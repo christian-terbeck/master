@@ -29,6 +29,9 @@ console.log(sensor.quaternion);
 // console.log(Object.getOwnPropertyNames(sensor));
 document.getElementById('output').innerHTML = sensor.quaternion;
 
+// window.ondeviceorientation = function(event) { console.log(event); };
+// window.addEventListener('deviceorientation', function(event) { console.log(event); });
+
 /*
 const sensor = new RelativeOrientationSensor();
 Promise.all([navigator.permissions.query({ name: "accelerometer" }),
