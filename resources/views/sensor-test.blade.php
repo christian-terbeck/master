@@ -14,11 +14,14 @@ const sensor = new Gyroscope();
 sensor.start();
 
 sensor.addEventListener('reading', () => {
-    document.getElementById('output').innerHTML = 'X: ' + sensor.x + '<br>Y: ' + sensor.y + '<br>Z: ' + sensor.z;
+    document.getElementById('output').innerHTML = 'X: ' + sensor.x ? sensor.x : 0 + '<br>Y: ' + sensor.y ? sensor.y : 0 + '<br>Z: ' + sensor.z ? sensor.z : 0;
 });
 
 console.log(sensor);
-
+console.log(sensor.x);
+console.log(sensor.y);
+console.log(sensor.z);
+console.log(sensor.timestamp);
 /*const options = { frequency: 60, referenceFrame: 'device' };
 const sensor = new RelativeOrientationSensor(options);
 
