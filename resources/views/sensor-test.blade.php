@@ -3,6 +3,7 @@
 <script type="module">
 
 // https://intel.github.io/generic-sensor-demos
+// https://github.com/intel/generic-sensor-demos
 // https://w3c.github.io/orientation-sensor/#relativeorientationsensor-interface
 
 import { RelativeOrientationSensor } from '../../js/sensors.js';
@@ -11,15 +12,17 @@ const options = { frequency: 60, referenceFrame: 'device' };
 const sensor = new RelativeOrientationSensor(options);
 
 sensor.addEventListener('reading', () => {
-  // model is a Three.js object instantiated elsewhere.
-  model.quaternion.fromArray(sensor.quaternion).inverse();
-  document.getElementById('output').innerHTML = sensor.quaternion;
+    // model is a Three.js object instantiated elsewhere.
+    // model.quaternion.fromArray(sensor.quaternion).inverse();
+    document.getElementById('output').innerHTML = sensor.quaternion;
 });
+
 sensor.addEventListener('error', error => {
-  if (event.error.name == 'NotReadableError') {
-    console.log("Sensor is not available.");
-  }
+    if (event.error.name == 'NotReadableError') {
+        console.log("Sensor is not available.");
+    }
 });
+
 sensor.start();
 
 console.log(sensor.quaternion);
