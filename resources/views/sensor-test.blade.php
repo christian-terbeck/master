@@ -11,10 +11,18 @@ import { Gyroscope } from '../../js/sensors.js';
 
 const sensor = new Gyroscope();
 
+var x = 0;
+var y = 0;
+var z = 0;
+
 sensor.start();
 
 sensor.addEventListener('reading', () => {
-    document.getElementById('output').innerHTML = 'X: ' + sensor.x ? sensor.x : 0 + '<br>Y: ' + sensor.y ? sensor.y : 0 + '<br>Z: ' + sensor.z ? sensor.z : 0;
+    x += sensor.x ? sensor.x : 0;
+    y += sensor.y ? sensor.y : 0;
+    z += sensor.z ? sensor.z : 0;
+
+    document.getElementById('output').innerHTML = 'X: ' + x + '<br>Y: ' + y + '<br>Z: ' + z;
 });
 
 console.log(sensor);
