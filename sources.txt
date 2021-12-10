@@ -11,3 +11,6 @@ displays are connected - each display knows the displays that can be reached
 detect people in cone of vision towards the next display
 
 let people wait if path is too crowded..
+
+
+MAKE contacts global!

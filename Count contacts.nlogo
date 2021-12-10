@@ -46,11 +46,15 @@ end
 
 to go
   ask people [
-    let all-people-in-contact []
+    let lost-contact-to []
+
+    foreach active-contacts [ x ->
+       set lost-contact-to lput x lost-contact-to
+    ]
 
     ask people in-radius contact-radius with [not (self = myself)] [
-      ifelse not member? myself active-contacts [
-        set active-contacts lput myself active-contacts
+      ifelse not member? [who] of myself active-contacts [
+        set active-contacts lput [who] of myself active-contacts ;does not seem to work poperly (maybe it adds the wrong contact id?)
         set active-contacts-periods lput 1 active-contacts-periods
         set overall-contacts overall-contacts + 1
         set number-of-contacts number-of-contacts + 1
@@ -71,33 +75,38 @@ to go
          print word self word " started contact with " myself
         ]
       ] [
-        let pos position myself active-contacts
+        let pos position [who] of myself active-contacts
         let counter-value item pos active-contacts-periods
         set counter-value counter-value + 1
         set active-contacts-periods replace-item pos active-contacts-periods counter-value
       ]
-
-      set all-people-in-contact lput myself all-people-in-contact
-    ]
-
-    foreach active-contacts [ x ->
-      if not member? x all-people-in-contact [
-        let pos position x active-contacts
-        let counter-value item pos active-contacts-periods
-        set overall-contact-time overall-contact-time + counter-value
-
-        set active-contacts remove-item pos active-contacts
-        set active-contacts-periods remove-item pos active-contacts-periods
-
-        if counter-value >= critical-period [
-          set critical-contacts critical-contacts + 1
-        ]
-
-        if show-logs? [
-          print word self word " lost contact to " word x word " after " word counter-value " ticks"
-        ]
+      print word "me: " [who] of self
+      print word "another agent: " [who] of myself
+      print word "my contacts: " lost-contact-to
+      if member? [who] of myself lost-contact-to [
+        ;let pos position [who] of myself lost-contact-to
+        print myself
       ]
     ]
+    ;print lost-contact-to
+;    foreach active-contacts [ x ->
+;      if not member? x all-people-in-contact [
+;        let pos position x active-contacts
+;        let counter-value item pos active-contacts-periods
+;        set overall-contact-time overall-contact-time + counter-value
+;
+;        ;set active-contacts remove-item pos active-contacts
+;        ;set active-contacts-periods remove-item pos active-contacts-periods
+;
+;        if counter-value >= critical-period [
+;          set critical-contacts critical-contacts + 1
+;        ]
+;
+;        if show-logs? [
+;          print word self word " lost contact to Person " word x word " after " word counter-value " ticks"
+;        ]
+;      ]
+;    ]
 
     if show-labels? [
       set label length had-contact-with
@@ -306,7 +315,7 @@ SWITCH
 283
 show-logs?
 show-logs?
-0
+1
 1
 -1000
 
