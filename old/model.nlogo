@@ -1,126 +1,58 @@
-globals [overall-contacts overall-contact-time unique-contacts critical-contacts]
+breed [peds ped]
+breed [public-displays public-display]
+globals [time mean-speed number-of-peds area-of-awareness]
+peds-own [state destination speedx speedy is-infected number-of-contacts had-contact-with]
+public-displays-own [location]
 
-breed [people person]
-people-own [target number-of-unique-contacts number-of-contacts had-contact-with active-contacts active-contacts-periods]
-
-breed [houses house]
-breed [circles circle]
-
-to setup
-  clear-all
-  set-default-shape houses "house"
-  set-default-shape circles "circle 2"
-
-  ;; CREATE-ORDERED-<BREEDS> distributes the houses evenly
-  create-ordered-houses number-of-houses
-    [ fd max-pxcor ]
-
-  create-people number-of-people [
-    setxy random-xcor random-ycor
-    set target one-of houses
-    set had-contact-with []
-    set active-contacts []
-    set active-contacts-periods []
-    face target
-  ]
-
-  if show-circles?
-    [
-      ask people [
-        make-circle
-      ]
-    ]
-
-  reset-ticks
+to startup
+  setup
 end
 
-to make-circle
-  hatch-circles 1
-  [ set size contact-radius
-    set color lput 64 extract-rgb color
-    __set-line-thickness 0.5
-    create-link-from myself
-    [ tie
-      hide-link ] ]
+to setup
+  clear-all reset-ticks
+  set number-of-peds 5
+  set-agents
+end
+
+to set-agents
+  import-pcolors "floorplan.png";
+  print count patches with [pcolor = black]
+  repeat number-of-peds [create-ped 0 0 0 0]
+  ;ask n-of round (p * number-of-peds) peds [set state 2 set color orange]
+end
+
+to create-ped  [s x y i]
+  ask one-of patches with [not any? peds-here and pcolor = white] [set x pxcor set y pycor]
+
+  create-peds 1 [set shape "person" set color cyan set xcor x + random-normal 0 .2 set ycor y + random-normal 0 .2 set is-infected 0 set number-of-contacts 0
+    set destination one-of patches with [pcolor = black]]
 end
 
 to go
-  ask people [
-    let all-people-in-contact []
+  move
+end
 
-    ask people in-radius contact-radius with [not (self = myself)] [
-      ifelse not member? myself active-contacts [
-        set active-contacts lput myself active-contacts
-        set active-contacts-periods lput 1 active-contacts-periods
-        set overall-contacts overall-contacts + 1
+to move
+  ask peds with [color = cyan]
+  [
+    face destination
+    fd 1
+
+    ask peds in-radius 2 with [not (self = myself)]
+    [
+      if [empty? filter [myself] had-contact-with]
+      [
         set number-of-contacts number-of-contacts + 1
-
-        if not member? myself had-contact-with [
-          set number-of-unique-contacts number-of-unique-contacts + 1
-          set had-contact-with lput myself had-contact-with
-
-          ask myself [
-            set number-of-unique-contacts number-of-unique-contacts + 1
-            set had-contact-with lput self had-contact-with
-          ]
-
-          set unique-contacts unique-contacts + 1
-        ]
-
-        if show-logs? [
-         print word self word " started contact with " myself
-        ]
-      ] [
-        let pos position myself active-contacts
-        let counter-value item pos active-contacts-periods
-        set counter-value counter-value + 1
-        set active-contacts-periods replace-item pos active-contacts-periods counter-value
-      ]
-
-      set all-people-in-contact lput myself all-people-in-contact
-    ]
-
-    foreach active-contacts [ x ->
-      if not member? x all-people-in-contact [
-        let pos position x active-contacts
-        let counter-value item pos active-contacts-periods
-        set overall-contact-time overall-contact-time + counter-value
-
-        set active-contacts remove-item pos active-contacts
-        set active-contacts-periods remove-item pos active-contacts-periods
-
-        if counter-value >= critical-period [
-          set critical-contacts critical-contacts + 1
-        ]
-
-        if show-logs? [
-          print word self word " lost contact to " word x word " after " word counter-value " ticks"
-        ]
+        had-contact-with add myself
       ]
     ]
-
-    if show-labels? [
-      set label length had-contact-with
-    ]
-
-    if distance target = 0
-      [ set target one-of houses
-        face target ]
-    ;; move towards target.  once the distance is less than 1,
-    ;; use move-to to land exactly on the target.
-
-    ifelse distance target < 1
-      [ move-to target ]
-      [ fd 1 ]
   ]
-
-  tick
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-320
+376
 10
-1121
+1177
 812
 -1
 -1
@@ -131,25 +63,25 @@ GRAPHICS-WINDOW
 1
 1
 0
-0
-0
+1
+1
 1
 -30
 30
 -30
 30
-1
-1
+0
+0
 1
 ticks
 30.0
 
 BUTTON
-61
-287
-146
-320
-setup
+86
+53
+150
+86
+Setup
 setup
 NIL
 1
@@ -162,13 +94,13 @@ NIL
 1
 
 BUTTON
-146
-287
-231
-320
-NIL
+174
+62
+237
+95
+Go
 go
-T
+NIL
 1
 T
 OBSERVER
@@ -176,191 +108,44 @@ NIL
 NIL
 NIL
 NIL
-0
-
-SLIDER
-60
-41
-230
-74
-number-of-people
-number-of-people
 1
-50
-2.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-60
-76
-230
-109
-number-of-houses
-number-of-houses
-3
-20
-20.0
-1
-1
-NIL
-HORIZONTAL
-
-PLOT
-1168
-20
-1852
-398
-Contacts
-ticks
-contacts
-0.0
-100.0
-0.0
-50.0
-true
-true
-"" ""
-PENS
-"overall-contacts" 1.0 0 -16777216 true "" "plot overall-contacts"
-"average-contacts" 1.0 0 -9276814 true "" "plot (overall-contacts / count turtles) * 2"
-"unique-contacts" 1.0 0 -955883 true "" "plot unique-contacts"
-"critical-contacts" 1.0 0 -2674135 true "" "plot critical-contacts"
-
-MONITOR
-1168
-407
-1289
-452
-Number of contacts
-overall-contacts
-0
-1
-11
-
-MONITOR
-1299
-407
-1512
-452
-Avg. number of contacts per Person
-(overall-contacts / count turtles) * 2
-5
-1
-11
-
-SWITCH
-61
-180
-189
-213
-show-circles?
-show-circles?
-0
-1
--1000
-
-SLIDER
-60
-110
-232
-143
-contact-radius
-contact-radius
-0
-15
-15.0
-.1
-1
-NIL
-HORIZONTAL
-
-SWITCH
-61
-215
-187
-248
-show-labels?
-show-labels?
-0
-1
--1000
-
-MONITOR
-1169
-509
-1303
-554
-Avg. contact duration
-overall-contact-time / overall-contacts
-5
-1
-11
-
-SWITCH
-61
-250
-178
-283
-show-logs?
-show-logs?
-0
-1
--1000
-
-MONITOR
-1169
-459
-1331
-504
-Number of unique contacts
-unique-contacts
-5
-1
-11
-
-SLIDER
-60
-145
-232
-178
-critical-period
-critical-period
-0
-10
-2.0
-1
-1
-NIL
-HORIZONTAL
-
-MONITOR
-1339
-459
-1498
-504
-Number of critical contacts
-critical-contacts
-5
-1
-11
 
 @#$#@#$#@
 ## WHAT IS IT?
 
-This code example demonstrates how to have a turtle approach a target location a step at a time.
+(a general understanding of what the model is trying to show or explain)
 
 ## HOW IT WORKS
 
-The `people` breed has a variable called `target`, which holds the agent the person is moving towards.
+(what rules the agents use to create the overall behavior of the model)
 
-The `face` command points the person towards the target.  `fd` moves the person.  `distance` measures the distance to the target.
+## HOW TO USE IT
 
-When a person reaches their target, they pick a random new target.
+(how to use the model, including a description of each of the items in the Interface tab)
 
-<!-- 2008 -->
+## THINGS TO NOTICE
+
+(suggested things for the user to notice while running the model)
+
+## THINGS TO TRY
+
+(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+
+## EXTENDING THE MODEL
+
+(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+
+## NETLOGO FEATURES
+
+(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
+
+## RELATED MODELS
+
+(models in the NetLogo Models Library and elsewhere which are of related interest)
+
+## CREDITS AND REFERENCES
+
+(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
 @#$#@#$#@
 default
 true
@@ -554,6 +339,22 @@ Polygon -7500403 true true 135 105 90 60 45 45 75 105 135 135
 Polygon -7500403 true true 165 105 165 135 225 105 255 45 210 60
 Polygon -7500403 true true 135 90 120 45 150 15 180 45 165 90
 
+sheep
+false
+15
+Circle -1 true true 203 65 88
+Circle -1 true true 70 65 162
+Circle -1 true true 150 105 120
+Polygon -7500403 true false 218 120 240 165 255 165 278 120
+Circle -7500403 true false 214 72 67
+Rectangle -1 true true 164 223 179 298
+Polygon -1 true true 45 285 30 285 30 240 15 195 45 210
+Circle -1 true true 3 83 150
+Rectangle -1 true true 65 221 80 296
+Polygon -1 true true 195 285 210 285 210 240 240 210 195 210
+Polygon -7500403 true false 276 85 285 105 302 99 294 83
+Polygon -7500403 true false 219 85 210 105 193 99 201 83
+
 square
 false
 0
@@ -637,6 +438,13 @@ Line -7500403 true 216 40 79 269
 Line -7500403 true 40 84 269 221
 Line -7500403 true 40 216 269 79
 Line -7500403 true 84 40 221 269
+
+wolf
+false
+0
+Polygon -16777216 true false 253 133 245 131 245 133
+Polygon -7500403 true true 2 194 13 197 30 191 38 193 38 205 20 226 20 257 27 265 38 266 40 260 31 253 31 230 60 206 68 198 75 209 66 228 65 243 82 261 84 268 100 267 103 261 77 239 79 231 100 207 98 196 119 201 143 202 160 195 166 210 172 213 173 238 167 251 160 248 154 265 169 264 178 247 186 240 198 260 200 271 217 271 219 262 207 258 195 230 192 198 210 184 227 164 242 144 259 145 284 151 277 141 293 140 299 134 297 127 273 119 270 105
+Polygon -7500403 true true -1 195 14 180 36 166 40 153 53 140 82 131 134 133 159 126 188 115 227 108 236 102 238 98 268 86 269 92 281 87 269 103 269 113
 
 x
 false
