@@ -46,27 +46,20 @@ end
 
 to go
   ask people [
-    let lost-contact-to []
-
-    foreach active-contacts [ x ->
-       set lost-contact-to lput x lost-contact-to
-    ]
+    let has-contact-to []
 
     ask people in-radius contact-radius with [not (self = myself)] [
       ifelse not member? [who] of myself active-contacts [
-        set active-contacts lput [who] of myself active-contacts ;does not seem to work poperly (maybe it adds the wrong contact id?)
+        set active-contacts lput [who] of myself active-contacts
         set active-contacts-periods lput 1 active-contacts-periods
-        set overall-contacts overall-contacts + 1
-        set number-of-contacts number-of-contacts + 1
 
         if not member? myself had-contact-with [
           set number-of-unique-contacts number-of-unique-contacts + 1
           set had-contact-with lput myself had-contact-with
 
-          ask myself [
-            set number-of-unique-contacts number-of-unique-contacts + 1
-            set had-contact-with lput self had-contact-with
-          ]
+          ;ask myself [
+            ;set had-contact-with lput self had-contact-with
+          ;]
 
           set unique-contacts unique-contacts + 1
         ]
@@ -80,36 +73,34 @@ to go
         set counter-value counter-value + 1
         set active-contacts-periods replace-item pos active-contacts-periods counter-value
       ]
-      print word "me: " [who] of self
-      print word "another agent: " [who] of myself
-      print word "my contacts: " lost-contact-to
-      if member? [who] of myself lost-contact-to [
-        ;let pos position [who] of myself lost-contact-to
-        print myself
+
+      set has-contact-to lput [who] of self has-contact-to
+    ]
+
+    foreach active-contacts [ x ->
+      if not member? x has-contact-to [
+        let pos position x active-contacts
+        let counter-value item pos active-contacts-periods
+        set overall-contact-time overall-contact-time + counter-value
+
+        set active-contacts remove-item pos active-contacts
+        set active-contacts-periods remove-item pos active-contacts-periods
+
+        set number-of-contacts number-of-contacts + 1
+        set overall-contacts overall-contacts + 1
+
+        if counter-value >= critical-period [
+          set critical-contacts critical-contacts + 1
+        ]
+
+        if show-logs? [
+          print word self word " lost contact to Person " word x word " after " word counter-value " ticks"
+        ]
       ]
     ]
-    ;print lost-contact-to
-;    foreach active-contacts [ x ->
-;      if not member? x all-people-in-contact [
-;        let pos position x active-contacts
-;        let counter-value item pos active-contacts-periods
-;        set overall-contact-time overall-contact-time + counter-value
-;
-;        ;set active-contacts remove-item pos active-contacts
-;        ;set active-contacts-periods remove-item pos active-contacts-periods
-;
-;        if counter-value >= critical-period [
-;          set critical-contacts critical-contacts + 1
-;        ]
-;
-;        if show-logs? [
-;          print word self word " lost contact to Person " word x word " after " word counter-value " ticks"
-;        ]
-;      ]
-;    ]
 
     if show-labels? [
-      set label length had-contact-with
+      set label number-of-contacts
     ]
 
     if distance target = 0
@@ -196,7 +187,7 @@ number-of-people
 number-of-people
 1
 50
-2.0
+10.0
 1
 1
 NIL
@@ -244,7 +235,7 @@ MONITOR
 1289
 452
 Number of contacts
-overall-contacts
+overall-contacts / 2
 0
 1
 11
@@ -255,7 +246,7 @@ MONITOR
 1512
 452
 Avg. number of contacts per Person
-(overall-contacts / count turtles) * 2
+overall-contacts / 2 / count people
 5
 1
 11
@@ -280,7 +271,7 @@ contact-radius
 contact-radius
 0
 15
-15.0
+5.0
 .1
 1
 NIL
@@ -325,7 +316,7 @@ MONITOR
 1331
 504
 Number of unique contacts
-unique-contacts
+unique-contacts / 2
 5
 1
 11
@@ -337,9 +328,9 @@ SLIDER
 178
 critical-period
 critical-period
-0
 10
-2.0
+150
+50.0
 1
 1
 NIL
@@ -351,10 +342,30 @@ MONITOR
 1498
 504
 Number of critical contacts
-critical-contacts
+critical-contacts / 2
 5
 1
 11
+
+TEXTBOX
+1523
+409
+1673
+451
+Can this be calculated like this? For a contact there are always 2 people required!
+11
+0.0
+1
+
+TEXTBOX
+1506
+470
+1656
+498
+I am also not sure about this calculation :D
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
