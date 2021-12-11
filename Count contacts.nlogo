@@ -359,26 +359,6 @@ critical-contacts / 2
 1
 11
 
-TEXTBOX
-1523
-409
-1673
-451
-Can this be calculated like this? For a contact there are always 2 people required!
-11
-0.0
-1
-
-TEXTBOX
-1506
-470
-1656
-498
-I am also not sure about this calculation :D
-11
-0.0
-1
-
 SLIDER
 61
 284

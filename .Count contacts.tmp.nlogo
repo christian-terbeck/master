@@ -89,13 +89,9 @@ to go
             ]
           ]
 
-          if not member?  had-contact-with [
+          if not member? x had-contact-with [
             set number-of-unique-contacts number-of-unique-contacts + 1
-            set had-contact-with lput myself had-contact-with
-
-            ;ask myself [
-            ;set had-contact-with lput self had-contact-with
-            ;]
+            set had-contact-with lput x had-contact-with
 
             set unique-contacts unique-contacts + 1
           ]
