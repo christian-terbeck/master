@@ -202,7 +202,7 @@ number-of-people
 number-of-people
 1
 50
-20.0
+13.0
 1
 1
 NIL
@@ -286,7 +286,7 @@ contact-radius
 contact-radius
 0
 15
-5.0
+3.5
 .1
 1
 NIL
@@ -345,7 +345,7 @@ critical-period
 critical-period
 10
 150
-10.0
+43.0
 1
 1
 NIL
