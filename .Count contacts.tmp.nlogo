@@ -1,4 +1,4 @@
-globals [overall-contacts overall-contact-time unique-contacts critical-contacts]
+globals [overall-contacts overall-contact-time unique-contacts critical-contacts contact-distance-values contact-distance]
 
 breed [people person]
 people-own [target number-of-unique-contacts number-of-contacts had-contact-with active-contacts active-contacts-periods]
@@ -64,6 +64,9 @@ to go
       ]
 
       set has-contact-to lput [who] of self has-contact-to
+
+      set contact-distance-values contact-distance-values + 1
+      set contact-distance contact-distance + d
     ]
 
     foreach active-contacts [ x ->
@@ -359,26 +362,6 @@ critical-contacts / 2
 1
 11
 
-TEXTBOX
-1523
-409
-1673
-451
-Can this be calculated like this? For a contact there are always 2 people required!
-11
-0.0
-1
-
-TEXTBOX
-1506
-470
-1656
-498
-I am also not sure about this calculation :D
-11
-0.0
-1
-
 SLIDER
 61
 284
@@ -393,6 +376,17 @@ contact-tolerance
 1
 NIL
 HORIZONTAL
+
+MONITOR
+1310
+509
+1444
+554
+Avg. contact distance
+count turtles
+5
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
