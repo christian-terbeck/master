@@ -1,11 +1,11 @@
 globals [time mean-speed stddev-speed flow-cum overall-contacts overall-contact-time unique-contacts critical-contacts contact-distance-values contact-distance]
 
 breed [peds ped]
-peds-own [speedx speedy state final-destination next-destination has-reached-first-node? starting-point last-node all-paths shortest-path has-created-circle?
+peds-own [speedx speedy state final-destination next-destination has-reached-first-node? starting-point last-node paths shortest-path has-created-circle?
           number-of-unique-contacts number-of-contacts had-contact-with active-contacts active-contacts-periods]
 
 breed [nodes node]
-nodes-own [reachable-nodes is-origin? is-destination? has-public-display?]
+nodes-own [is-origin? is-destination? has-public-display?]
 
 breed [circles circle]
 
@@ -61,27 +61,25 @@ to set-nodes
   create-node -18 -15 false true    ; 12
   create-node 8 17.5 false true     ; 13
 
-  ;Todo: use netlogo links for decision points instead!
-  establish-connection node 0 node 7
-  establish-connection node 0 node 4
-  establish-connection node 0 node 5
-  establish-connection node 4 node 9
-  establish-connection node 4 node 8
-  establish-connection node 4 node 2
-  establish-connection node 4 node 1
-  establish-connection node 9 node 2
-  establish-connection node 9 node 3
-  establish-connection node 2 node 1
-  establish-connection node 2 node 3
-  establish-connection node 1 node 6
-  establish-connection node 6 node 8
+  link-nodes node 0 node 7 true
+  link-nodes node 0 node 4 true
+  link-nodes node 0 node 5 true
+  link-nodes node 4 node 9 true
+  link-nodes node 4 node 8 true
+  link-nodes node 4 node 2 true
+  link-nodes node 4 node 1 true
+  link-nodes node 9 node 2 true
+  link-nodes node 9 node 3 true
+  link-nodes node 2 node 1 true
+  link-nodes node 2 node 3 true
+  link-nodes node 1 node 6 true
+  link-nodes node 6 node 8 true
 
-
-  establish-connection node 10 node 7
-  establish-connection node 11 node 0
-  establish-connection node 12 node 5
-  establish-connection node 13 node 8
-  establish-connection node 13 node 6
+  link-nodes node 10 node 7 true
+  link-nodes node 11 node 0 true
+  link-nodes node 12 node 5 true
+  link-nodes node 13 node 8 true
+  link-nodes node 13 node 6 true
 end
 
 to set-agents
@@ -104,7 +102,7 @@ to create-ped  [x y k]
     set has-reached-first-node? false
     set starting-point s-point
     set last-node s-point
-    set all-paths []
+    set paths []
     set shortest-path [] set-initial-path-and-next-destination k
     set has-created-circle? false
     set had-contact-with []
@@ -117,18 +115,34 @@ to create-ped  [x y k]
 end
 
 to create-node [x y dest origin]
-  create-nodes 1 [ set xcor x set ycor y set reachable-nodes [] set is-destination? dest set shape "circle" ifelse dest = true [ set color red ] [ set color green ] set label count nodes - 1 set is-origin? origin ]
+  create-nodes 1 [ set xcor x set ycor y set is-destination? dest set shape "circle" ifelse dest = true [ set color red ] [ set color green ] set label count nodes - 1 set is-origin? origin ]
 end
 
 ;Todo: check if this can entirely be done with links and try to NOT use lists!
-to establish-connection [dp1 dp2]
-  ask dp1 [
-    set reachable-nodes lput dp2 reachable-nodes
+to link-nodes [node1 node2 is-two-way?]
+  ask node1 [
+    ifelse is-two-way? [
+      create-link-with node2 [
+        if not show-paths? [
+          hide-link
+        ]
+      ]
+    ] [
+      create-link-to node2 [
+        if not show-paths? [
+          hide-link
+        ]
+      ]
+    ]
   ]
-  ask dp2 [
-    set reachable-nodes lput dp1 reachable-nodes
-    create-link-with dp1
-  ]
+
+;  ask node1 [
+;    set reachable-nodes lput node2 reachable-nodes
+;  ]
+;  ask node2 [
+;    set reachable-nodes lput node1 reachable-nodes
+;    create-link-with node1
+;  ]
 end
 
 ;to Create [k] ; create obstacle using mouse click
@@ -158,7 +172,7 @@ to plot!
 end
 
 to set-initial-path-and-next-destination [k]
-  set-all-paths self (list (list starting-point))
+  set-paths self (list (list starting-point))
   set-shortest-path-and-next-destination k
 end
 
@@ -169,9 +183,9 @@ to set-shortest-path-and-next-destination [k]
   ][
     ; pax without a navigation aid
    ifelse use-random-path? [
-    set shortest-path one-of all-paths
+    set shortest-path one-of paths
   ][
-    ifelse use-easiest-path? [ set shortest-path first all-paths ][ set shortest-path last all-paths ]
+    ifelse use-easiest-path? [ set shortest-path first paths ][ set shortest-path last paths ]
   ]
   ]
   set next-destination item 1 shortest-path
@@ -179,11 +193,11 @@ end
 
 to set-navigation-system-path [k]
   ; store it in 'shortest-path' of agent
-  let filtered-paths all-paths ; TODO: filter paths that are not traveled yet and do not make a huge detour
+  let filtered-paths paths ; TODO: filter paths that are not traveled yet and do not make a huge detour
   ; select least traveled route out of these
   let min-travelers 99999999999
   let min-travelers-path nobody
-  ;print word "All paths: " all-paths
+  ;print word "All paths: " paths
   foreach filtered-paths [path ->
     let current-travelers count peds with [last-node = item 0 path and next-destination = item 1 path and not (self = myself)]
     if current-travelers < min-travelers [
@@ -198,37 +212,55 @@ end
 
 to recalculate-shortest-path [k reached]
   ; update possible paths from this node
-  set all-paths map [ i -> but-first i ] (filter [ i -> item 1 i = reached ] all-paths)
+  set paths map [ i -> but-first i ] (filter [ i -> item 1 i = reached ] paths)
   set-shortest-path-and-next-destination self
 end
 
-to set-all-paths [k from-nodes]
+to set-paths [k from-nodes]
   let new-from-nodes from-nodes
-  foreach from-nodes [i ->
-   let reachable [reachable-nodes] of last i
-    foreach reachable [r ->
-      let new-route i
-      set new-route lput r new-route
 
-      if not member? r i [
-        ifelse [is-destination?] of r [
+  foreach from-nodes [i ->
+    let reachable-nodes [out-link-neighbors] of last i
+    ask reachable-nodes [
+      let new-route i
+      set new-route lput self new-route
+
+      if not member? self i [
+        ifelse [is-destination?] of self [
           ; reached destination - valid route
-          set all-paths lput new-route all-paths
+          ask k [
+            set paths lput new-route paths
+          ]
         ][
           ; destination not reached yet - keep on searching
           set new-from-nodes lput new-route new-from-nodes
         ]
       ]
     ]
+
     let pos position i new-from-nodes
     set new-from-nodes remove-item pos new-from-nodes
+
+;    foreach reachable [r ->
+;      let new-route i
+;      set new-route lput r new-route
+;
+;      if not member? r i [
+;        ifelse [is-destination?] of r [
+;          ; reached destination - valid route
+;          set paths lput new-route paths
+;        ][
+;          ; destination not reached yet - keep on searching
+;          set new-from-nodes lput new-route new-from-nodes
+;        ]
+;      ]
+;    ]
+;    let pos position i new-from-nodes
+;    set new-from-nodes remove-item pos new-from-nodes
   ]
-  ifelse not empty? filter [ i ->  [is-destination?] of last i = false ] new-from-nodes [
-    set-all-paths self new-from-nodes
-  ][
-    ;print filter [ i ->  [is-destination?] of last i = false ] new-from-nodes
-    ;print word "ABORT - From nodes: " new-from-nodes
-    ;print word "ALL PATH: " all-paths
+
+  if not empty? filter [ i ->  [is-destination?] of last i = false ] new-from-nodes [
+    set-paths self new-from-nodes
   ]
 end
 
@@ -935,7 +967,7 @@ SWITCH
 288
 show-paths?
 show-paths?
-1
+0
 1
 -1000
 
