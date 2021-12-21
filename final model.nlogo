@@ -85,11 +85,11 @@ to set-nodes
 end
 
 to set-agents
-  repeat nb-peds [c-ped 0 0 0]
+  repeat nb-peds [create-ped 0 0 0]
   ask n-of round (p * nb-peds) peds [set state 2 set color orange]
 end
 
-to c-ped  [x y k]
+to create-ped  [x y k]
   let randfour random 4
   ;if k = 0 [ask one-of patches with [not any? peds-here and pcolor = white] [set x pxcor set y pycor]]
   let s-point nobody
@@ -133,7 +133,7 @@ end
 
 ;to Create [k] ; create obstacle using mouse click
 ;  if timer > .2 and mouse-down?[
-;    reset-timer c-ped mouse-xcor mouse-ycor k
+;    reset-timer create-ped mouse-xcor mouse-ycor k
 ;  ]
 ;  display
 ;end
