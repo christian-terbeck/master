@@ -168,10 +168,10 @@ to set-shortest-path-and-next-destination [k]
     set-navigation-system-path self
   ][
     ; pax without a navigation aid
-   ifelse random-path? [
+   ifelse use-random-path? [
     set shortest-path one-of all-paths
   ][
-    ifelse easiest? [ set shortest-path first all-paths ][ set shortest-path last all-paths ]
+    ifelse use-easiest-path? [ set shortest-path first all-paths ][ set shortest-path last all-paths ]
   ]
   ]
   set next-destination item 1 shortest-path
@@ -477,9 +477,9 @@ NIL
 
 PLOT
 41
-443
-354
-563
+429
+391
+549
 Mean flow
 Time
 Flow
@@ -496,9 +496,9 @@ PENS
 
 PLOT
 41
-320
+306
 391
-440
+426
 Speed
 Time
 Speed
@@ -620,12 +620,12 @@ PENS
 "default" 1.0 0 -11053225 true "" ""
 
 SWITCH
-231
-266
-336
-299
-easiest?
-easiest?
+87
+215
+288
+248
+use-easiest-path?
+use-easiest-path?
 0
 1
 -1000
@@ -646,10 +646,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-199
-217
-291
-250
+294
+182
+386
+215
 D
 D
 0.1
@@ -678,10 +678,10 @@ NIL
 1
 
 SLIDER
-199
-180
-291
-213
+294
+145
+386
+178
 A
 A
 0
@@ -722,56 +722,22 @@ p
 NIL
 HORIZONTAL
 
-BUTTON
-91
-181
-194
-214
-Create-destination
-create -1
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-91
-216
-194
-249
-Delete-obstacle
-delete -1
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 SWITCH
-59
-267
-205
-300
-random-path?
-random-path?
+86
+180
+289
+213
+use-random-path?
+use-random-path?
 1
 1
 -1000
 
 SWITCH
-297
-217
-414
-250
+211
+255
+328
+288
 show-logs?
 show-logs?
 1
@@ -963,10 +929,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-296
-179
-422
-212
+87
+255
+205
+288
 show-paths?
 show-paths?
 1
