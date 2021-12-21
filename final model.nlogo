@@ -1,11 +1,11 @@
 globals [time mean-speed stddev-speed flow-cum overall-contacts overall-contact-time unique-contacts critical-contacts contact-distance-values contact-distance]
 
 breed [peds ped]
-peds-own [speedx speedy state final-destination next-destination first-reached starting-point last-node all-paths shortest-path circle-created
+peds-own [speedx speedy state final-destination next-destination has-reached-first-node? starting-point last-node all-paths shortest-path has-created-circle?
           number-of-unique-contacts number-of-contacts had-contact-with active-contacts active-contacts-periods]
 
 breed [nodes node]
-nodes-own [reachable-nodes is-destination is-origin]
+nodes-own [reachable-nodes is-origin? is-destination? has-public-display?]
 
 breed [circles circle]
 
@@ -22,9 +22,9 @@ to setup
 ;      ]
 ;    ]
   ask peds [
-    if show-circles? and not circle-created [
+    if show-circles? and not has-created-circle? [
       make-circle
-      set circle-created true
+      set has-created-circle? true
     ]
   ]
   if show-logs? [print "--- NEW SIMULATION ---"]
@@ -91,20 +91,20 @@ to c-ped  [x y k]
   let randfour random 4
   ;if k = 0 [ask one-of patches with [not any? peds-here and pcolor = white] [set x pxcor set y pycor]]
   let s-point nobody
-  if k = 0 [ask one-of nodes with [is-destination = false] [set x pxcor set y pycor set s-point self]]
+  if k = 0 [ask one-of nodes with [is-destination? = false] [set x pxcor set y pycor set s-point self]]
   create-peds 1 [
-    set shape "person business"
+    set shape "person"
     set color cyan
     set xcor x + random-normal 0 .2
     set ycor y + random-normal 0 .2
-    set final-destination one-of nodes with [is-destination = true]
+    set final-destination one-of nodes with [is-destination? = true]
     set next-destination nobody
-    set first-reached false
+    set has-reached-first-node? false
     set starting-point s-point
     set last-node s-point
     set all-paths []
     set shortest-path [] set-initial-path-and-next-destination k
-    set circle-created false
+    set has-created-circle? false
     set had-contact-with []
     set active-contacts []
     set active-contacts-periods []
@@ -115,7 +115,7 @@ to c-ped  [x y k]
 end
 
 to c-node [x y dest origin]
-  create-nodes 1 [ set xcor x set ycor y set reachable-nodes [] set is-destination dest set shape "circle" ifelse dest = true [ set color red ] [ set color green ] set label count nodes - 1 set is-origin origin ]
+  create-nodes 1 [ set xcor x set ycor y set reachable-nodes [] set is-destination? dest set shape "circle" ifelse dest = true [ set color red ] [ set color green ] set label count nodes - 1 set is-origin? origin ]
 end
 
 to establish-connection [dp1 dp2]
@@ -210,7 +210,7 @@ to set-all-paths [k from-nodes]
         ; walking a circle - do not include that one
         ; do nothing
       ] [
-        ifelse [is-destination] of r [
+        ifelse [is-destination?] of r [
           ; reached destination - valid route
           set all-paths lput new-route all-paths
         ][
@@ -222,10 +222,10 @@ to set-all-paths [k from-nodes]
     let pos position i new-from-nodes
     set new-from-nodes remove-item pos new-from-nodes
   ]
-  ifelse not empty? filter [ i ->  [is-destination] of last i = false ] new-from-nodes [
+  ifelse not empty? filter [ i ->  [is-destination?] of last i = false ] new-from-nodes [
     set-all-paths self new-from-nodes
   ][
-    ;print filter [ i ->  [is-destination] of last i = false ] new-from-nodes
+    ;print filter [ i ->  [is-destination?] of last i = false ] new-from-nodes
     ;print word "ABORT - From nodes: " new-from-nodes
     ;print word "ALL PATH: " all-paths
   ]
@@ -942,7 +942,7 @@ SWITCH
 84
 show-labels?
 show-labels?
-1
+0
 1
 -1000
 
