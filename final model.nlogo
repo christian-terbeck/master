@@ -1,11 +1,11 @@
 globals [time mean-speed stddev-speed flow-cum overall-contacts overall-contact-time unique-contacts critical-contacts contact-distance-values contact-distance]
 
 breed [peds ped]
-peds-own [speedx speedy state final-destination next-destination first-reached starting-point last-decision-point all-paths shortest-path circle-created
+peds-own [speedx speedy state final-destination next-destination first-reached starting-point last-node all-paths shortest-path circle-created
           number-of-unique-contacts number-of-contacts had-contact-with active-contacts active-contacts-periods]
 
-breed [decision-points decision-point]
-decision-points-own [reachable-decision-points area-of-awareness is-destination is-origin]
+breed [nodes node]
+nodes-own [reachable-nodes is-destination is-origin]
 
 breed [circles circle]
 
@@ -13,7 +13,7 @@ to setup
   clear-all reset-ticks
   import-pcolors "floorplans/example.png"
   set-default-shape circles "circle 2"
-  set-decision-points
+  set-nodes
   set-agents
 ;  if show-circles?
 ;    [
@@ -43,43 +43,43 @@ to make-circle
   ]
 end
 
-to set-decision-points
-  c-decision-point -10 -2 false false    ; 0
-  c-decision-point 16 -2 false false     ; 1
-  c-decision-point 12 -6 false false     ; 2
-  c-decision-point 13 -12 true false     ; 3
-  c-decision-point 0 -2 false false      ; 4
-  c-decision-point -10 -10 false true    ; 5
-  c-decision-point 13 13 false true      ; 6
-  c-decision-point -13 13 false true     ; 7
-  c-decision-point 0 13 false true       ; 8
-  c-decision-point 0 -13 false true      ; 9
-  c-decision-point -18 15 false true     ; 10
-  c-decision-point -18 -2 false true     ; 11
-  c-decision-point -18 -15 false true    ; 12
-  c-decision-point 8 17.5 false true     ; 13
+to set-nodes
+  c-node -10 -2 false false    ; 0
+  c-node 16 -2 false false     ; 1
+  c-node 12 -6 false false     ; 2
+  c-node 13 -12 true false     ; 3
+  c-node 0 -2 false false      ; 4
+  c-node -10 -10 false true    ; 5
+  c-node 13 13 false true      ; 6
+  c-node -13 13 false true     ; 7
+  c-node 0 13 false true       ; 8
+  c-node 0 -13 false true      ; 9
+  c-node -18 15 false true     ; 10
+  c-node -18 -2 false true     ; 11
+  c-node -18 -15 false true    ; 12
+  c-node 8 17.5 false true     ; 13
 
   ;Todo: use netlogo links for decision points instead!
-  establish-connection decision-point 0 decision-point 7
-  establish-connection decision-point 0 decision-point 4
-  establish-connection decision-point 0 decision-point 5
-  establish-connection decision-point 4 decision-point 9
-  establish-connection decision-point 4 decision-point 8
-  establish-connection decision-point 4 decision-point 2
-  establish-connection decision-point 4 decision-point 1
-  establish-connection decision-point 9 decision-point 2
-  establish-connection decision-point 9 decision-point 3
-  establish-connection decision-point 2 decision-point 1
-  establish-connection decision-point 2 decision-point 3
-  establish-connection decision-point 1 decision-point 6
-  establish-connection decision-point 6 decision-point 8
+  establish-connection node 0 node 7
+  establish-connection node 0 node 4
+  establish-connection node 0 node 5
+  establish-connection node 4 node 9
+  establish-connection node 4 node 8
+  establish-connection node 4 node 2
+  establish-connection node 4 node 1
+  establish-connection node 9 node 2
+  establish-connection node 9 node 3
+  establish-connection node 2 node 1
+  establish-connection node 2 node 3
+  establish-connection node 1 node 6
+  establish-connection node 6 node 8
 
 
-  establish-connection decision-point 10 decision-point 7
-  establish-connection decision-point 11 decision-point 0
-  establish-connection decision-point 12 decision-point 5
-  establish-connection decision-point 13 decision-point 8
-  establish-connection decision-point 13 decision-point 6
+  establish-connection node 10 node 7
+  establish-connection node 11 node 0
+  establish-connection node 12 node 5
+  establish-connection node 13 node 8
+  establish-connection node 13 node 6
 end
 
 to set-agents
@@ -91,39 +91,39 @@ to c-ped  [x y k]
   let randfour random 4
   ;if k = 0 [ask one-of patches with [not any? peds-here and pcolor = white] [set x pxcor set y pycor]]
   let s-point nobody
-  if k = 0 [ask one-of decision-points with [is-destination = false] [set x pxcor set y pycor set s-point self]]
+  if k = 0 [ask one-of nodes with [is-destination = false] [set x pxcor set y pycor set s-point self]]
   create-peds 1 [
     set shape "person business"
     set color cyan
     set xcor x + random-normal 0 .2
     set ycor y + random-normal 0 .2
-    set final-destination one-of decision-points with [is-destination = true]
+    set final-destination one-of nodes with [is-destination = true]
     set next-destination nobody
     set first-reached false
     set starting-point s-point
-    set last-decision-point s-point
+    set last-node s-point
     set all-paths []
     set shortest-path [] set-initial-path-and-next-destination k
     set circle-created false
     set had-contact-with []
     set active-contacts []
     set active-contacts-periods []
-    face decision-point 1
+    face node 1
 
     if k = -1 [set color green set state -1]
   ]
 end
 
-to c-decision-point [x y dest origin]
-  create-decision-points 1 [ set xcor x set ycor y set reachable-decision-points [] set is-destination dest set shape "circle" ifelse dest = true [ set color red ] [ set color green ] set label count decision-points - 1 set is-origin origin ]
+to c-node [x y dest origin]
+  create-nodes 1 [ set xcor x set ycor y set reachable-nodes [] set is-destination dest set shape "circle" ifelse dest = true [ set color red ] [ set color green ] set label count nodes - 1 set is-origin origin ]
 end
 
 to establish-connection [dp1 dp2]
   ask dp1 [
-    set reachable-decision-points lput dp2 reachable-decision-points
+    set reachable-nodes lput dp2 reachable-nodes
   ]
   ask dp2 [
-    set reachable-decision-points lput dp1 reachable-decision-points
+    set reachable-nodes lput dp1 reachable-nodes
     create-link-with dp1
   ]
 end
@@ -182,7 +182,7 @@ to set-navigation-system-path [k]
   let min-travelers-path nobody
   ;print word "All paths: " all-paths
   foreach filtered-paths [path ->
-    let current-travelers count peds with [last-decision-point = item 0 path and next-destination = item 1 path and not (self = myself)]
+    let current-travelers count peds with [last-node = item 0 path and next-destination = item 1 path and not (self = myself)]
     if current-travelers < min-travelers [
       ;print word "Travelers: " word current-travelers word " - path: " path
       set min-travelers current-travelers
@@ -202,7 +202,7 @@ end
 to set-all-paths [k from-nodes]
   let new-from-nodes from-nodes
   foreach from-nodes [i ->
-   let reachable [reachable-decision-points] of last i
+   let reachable [reachable-nodes] of last i
     foreach reachable [r ->
       let new-route i
       set new-route lput r new-route
@@ -232,23 +232,23 @@ to set-all-paths [k from-nodes]
 end
 
 to set-next-destination [k]
-;    let available-decision-points []
-;    let closest-decision-point nobody
-;    foreach decision-points [i ->
-;      if not member? i visited-decision-points [
-;        set available-decision-points fput i available-decision-points
+;    let available-nodes []
+;    let closest-node nobody
+;    foreach nodes [i ->
+;      if not member? i visited-nodes [
+;        set available-nodes fput i available-nodes
 ;      ]
 ;    ]
-;    foreach available-decision-points [i ->
+;    foreach available-nodes [i ->
 ;      if ((distance i + [ distance i ] of final-destination) < distance final-destination * 1.5) and distance final-destination > distance i [
-;        ifelse closest-decision-point = nobody [
-;          set closest-decision-point i
+;        ifelse closest-node = nobody [
+;          set closest-node i
 ;        ][
-;          if ((distance i + [ distance i ] of final-destination) < (distance closest-decision-point + [ distance closest-decision-point ] of final-destination)) [ set closest-decision-point i ]
+;          if ((distance i + [ distance i ] of final-destination) < (distance closest-node + [ distance closest-node ] of final-destination)) [ set closest-node i ]
 ;        ]
 ;      ]
 ;    ]
-;    ifelse closest-decision-point = nobody [ set next-destination final-destination ][ set next-destination closest-decision-point]
+;    ifelse closest-node = nobody [ set next-destination final-destination ][ set next-destination closest-node]
 ;  ]
 end
 
@@ -361,7 +361,7 @@ to move
       set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
       set speedy speedy + dt * (repy + (V0 * cos hd - speedy) / Tr)
       if distance next-destination < D / 2 [
-        set last-decision-point next-destination
+        set last-node next-destination
         ifelse distance final-destination < D / 2 [
           ;print word self " has reached its destination"
           ask in-link-neighbors [
@@ -925,10 +925,10 @@ PENS
 "unique-contacts" 1.0 0 -955883 true "" "plot (unique-contacts / 2)"
 
 SWITCH
-1159
-46
-1301
-79
+1324
+51
+1466
+84
 show-circles?
 show-circles?
 0
@@ -936,15 +936,30 @@ show-circles?
 -1000
 
 SWITCH
-1325
-46
-1463
-79
+1490
+51
+1628
+84
 show-labels?
 show-labels?
 1
 1
 -1000
+
+SLIDER
+1133
+50
+1305
+83
+area-of-awareness
+area-of-awareness
+0
+20
+10.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
