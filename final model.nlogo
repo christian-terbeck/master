@@ -15,12 +15,6 @@ to setup
   set-default-shape circles "circle 2"
   set-nodes
   set-agents
-;  if show-circles?
-;    [
-;      ask peds [
-;        make-circle
-;      ]
-;    ]
   ask peds [
     if show-circles? and not has-created-circle? [
       make-circle
@@ -33,7 +27,7 @@ end
 to make-circle
   hatch-circles 1 [
     set size contact-radius
-    set color lput 64 extract-rgb color
+    set color lput 20 extract-rgb color
     __set-line-thickness 0.5
 
     create-link-with myself [
@@ -844,7 +838,7 @@ MONITOR
 143
 Number of contacts
 overall-contacts / 2
-17
+0
 1
 11
 
@@ -855,7 +849,7 @@ MONITOR
 144
 Avg. number of contacts per person
 overall-contacts / 2 / Nb-peds
-5
+3
 1
 11
 
@@ -866,7 +860,7 @@ MONITOR
 199
 Number of unique contacts
 unique-contacts / 2
-17
+0
 1
 11
 
@@ -877,7 +871,7 @@ MONITOR
 199
 Critical contacts
 critical-contacts / 2
-17
+0
 1
 11
 
@@ -888,7 +882,7 @@ MONITOR
 257
 Average contact duration
 overall-contact-time / overall-contacts
-17
+3
 1
 11
 
@@ -899,7 +893,7 @@ MONITOR
 257
 Average contact distance
 contact-distance / contact-distance-values
-17
+3
 1
 11
 
