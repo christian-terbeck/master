@@ -88,7 +88,10 @@ end
 
 to set-agents
   repeat nb-peds [create-ped 0 0 0]
-  ask n-of round (p * nb-peds) peds [set state 2 set color orange]
+  ask n-of round (p * nb-peds) peds [
+    set state 2
+    set color orange
+  ]
 end
 
 to create-ped  [x y k]
@@ -391,6 +394,7 @@ end
 to move
   set time precision (time + dt) 5 tick-advance 1
   trace-contacts
+
   ask peds with [state > -1]
     [
       if next-destination = nobody [set-next-destination self]
@@ -398,10 +402,12 @@ to move
       let h hd
       let repx 0
       let repy 0
-      if not (speedx * speedy = 0)
-      [set h atan speedx speedy]
-      ask peds in-cone (D) 120 with [not (self = myself)] ; self is me. myself is the agent who is asking me to do whatever I'm doing now.
-      [
+
+      if not (speedx * speedy = 0) [
+        set h atan speedx speedy
+      ]
+
+      ask peds in-cone (D) 120 with [not (self = myself)] [
         ifelse distance final-destination < D or distance next-destination < D [
           set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
          set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
@@ -410,16 +416,18 @@ to move
          set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
         ]
       ]
-      ask patches in-radius (D) with [pcolor = 0]
-      [
+
+      ask patches in-radius (D) with [pcolor = 0] [
         set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
         set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
       ]
 
       set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
       set speedy speedy + dt * (repy + (V0 * cos hd - speedy) / Tr)
+
       if distance next-destination < D / 2 [
         set last-node next-destination
+
         ifelse distance final-destination < D / 2 [
           ;print word self " has reached its destination"
           ask in-link-neighbors [
@@ -428,8 +436,9 @@ to move
           die
         ][
           let pos (position next-destination shortest-path) + 1
+
           ;if (length shortest-path) < pos + 1 [
-          ifelse state = 2 [ ;orange agents
+          ifelse state = 2 [
             recalculate-shortest-path self next-destination
           ][
             set next-destination item pos shortest-path
