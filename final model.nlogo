@@ -10,21 +10,29 @@ nodes-own [reachable-nodes is-origin? is-destination? has-public-display?]
 breed [circles circle]
 
 to setup
-  clear-all reset-ticks
+  clear-all
+  reset-ticks
+
   import-pcolors "floorplans/example.png"
+
   set-default-shape circles "circle 2"
+
   set-nodes
   set-agents
+
   ask peds [
     if show-circles? and not has-created-circle? [
-      make-circle
+      create-circle
       set has-created-circle? true
     ]
   ]
-  if show-logs? [print "--- NEW SIMULATION ---"]
+
+  if show-logs? [
+    print "--- NEW SIMULATION ---"
+  ]
 end
 
-to make-circle
+to create-circle
   hatch-circles 1 [
     set size contact-radius
     set color lput 20 extract-rgb color
@@ -38,20 +46,20 @@ to make-circle
 end
 
 to set-nodes
-  c-node -10 -2 false false    ; 0
-  c-node 16 -2 false false     ; 1
-  c-node 12 -6 false false     ; 2
-  c-node 13 -12 true false     ; 3
-  c-node 0 -2 false false      ; 4
-  c-node -10 -10 false true    ; 5
-  c-node 13 13 false true      ; 6
-  c-node -13 13 false true     ; 7
-  c-node 0 13 false true       ; 8
-  c-node 0 -13 false true      ; 9
-  c-node -18 15 false true     ; 10
-  c-node -18 -2 false true     ; 11
-  c-node -18 -15 false true    ; 12
-  c-node 8 17.5 false true     ; 13
+  create-node -10 -2 false false    ; 0
+  create-node 16 -2 false false     ; 1
+  create-node 12 -6 false false     ; 2
+  create-node 13 -12 true false     ; 3
+  create-node 0 -2 false false      ; 4
+  create-node -10 -10 false true    ; 5
+  create-node 13 13 false true      ; 6
+  create-node -13 13 false true     ; 7
+  create-node 0 13 false true       ; 8
+  create-node 0 -13 false true      ; 9
+  create-node -18 15 false true     ; 10
+  create-node -18 -2 false true     ; 11
+  create-node -18 -15 false true    ; 12
+  create-node 8 17.5 false true     ; 13
 
   ;Todo: use netlogo links for decision points instead!
   establish-connection node 0 node 7
@@ -108,10 +116,11 @@ to c-ped  [x y k]
   ]
 end
 
-to c-node [x y dest origin]
+to create-node [x y dest origin]
   create-nodes 1 [ set xcor x set ycor y set reachable-nodes [] set is-destination? dest set shape "circle" ifelse dest = true [ set color red ] [ set color green ] set label count nodes - 1 set is-origin? origin ]
 end
 
+;Todo: check if this can entirely be done with links and try to NOT use lists!
 to establish-connection [dp1 dp2]
   ask dp1 [
     set reachable-nodes lput dp2 reachable-nodes
@@ -200,10 +209,8 @@ to set-all-paths [k from-nodes]
     foreach reachable [r ->
       let new-route i
       set new-route lput r new-route
-      ifelse member? r i [; Todo: use if not and remove empty if statement
-        ; walking a circle - do not include that one
-        ; do nothing
-      ] [
+
+      if not member? r i [
         ifelse [is-destination?] of r [
           ; reached destination - valid route
           set all-paths lput new-route all-paths
