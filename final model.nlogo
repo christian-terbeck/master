@@ -139,7 +139,7 @@ to create-node [x y is-origin is-destination has-public-display]
       ifelse has-public-display [
         set shape "computer server"
         set size 2
-        set color black
+        set color gray
         set hidden? false
       ] [
         set color green
