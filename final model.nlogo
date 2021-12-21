@@ -767,10 +767,10 @@ random-path?
 -1000
 
 SWITCH
-308
-198
-425
-231
+297
+217
+414
+250
 show-logs?
 show-logs?
 1
@@ -960,6 +960,17 @@ area-of-awareness
 1
 NIL
 HORIZONTAL
+
+SWITCH
+296
+179
+422
+212
+show-paths?
+show-paths?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
