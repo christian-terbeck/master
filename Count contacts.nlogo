@@ -73,12 +73,12 @@ to go
       if not member? x has-contact-to [
         let pos position x active-contacts
         let counter-value item pos active-contacts-periods
-        set overall-contact-time overall-contact-time + counter-value
 
         set active-contacts remove-item pos active-contacts
         set active-contacts-periods remove-item pos active-contacts-periods
 
         ifelse counter-value > contact-tolerance [
+          set overall-contact-time overall-contact-time + counter-value
           set number-of-contacts number-of-contacts + 1
           set overall-contacts overall-contacts + 1
 

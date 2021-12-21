@@ -25,6 +25,10 @@ to setup
       create-circle
       set has-created-circle? true
     ]
+
+    if show-walking-paths? [
+      pen-down
+    ]
   ]
 
   if show-logs? [
@@ -46,20 +50,20 @@ to create-circle
 end
 
 to set-nodes
-  create-node -10 -2 false false    ; 0
-  create-node 16 -2 false false     ; 1
-  create-node 12 -6 false false     ; 2
-  create-node 13 -12 true false     ; 3
-  create-node 0 -2 false false      ; 4
-  create-node -10 -10 false true    ; 5
-  create-node 13 13 false true      ; 6
-  create-node -13 13 false true     ; 7
-  create-node 0 13 false true       ; 8
-  create-node 0 -13 false true      ; 9
-  create-node -18 15 false true     ; 10
-  create-node -18 -2 false true     ; 11
-  create-node -18 -15 false true    ; 12
-  create-node 8 17.5 false true     ; 13
+  create-node -10 -2 false false true     ; 0
+  create-node 16 -2 false false true      ; 1
+  create-node 12 -6 false false true      ; 2
+  create-node 13 -12 false true true      ; 3
+  create-node 0 -2 false false true       ; 4
+  create-node -10 -10 true false false    ; 5
+  create-node 13 13 true false true       ; 6
+  create-node -13 13 true false false     ; 7
+  create-node 0 13 true false true        ; 8
+  create-node 0 -13 true false true       ; 9
+  create-node -18 15 true false false     ; 10
+  create-node -18 -2 true false false     ; 11
+  create-node -18 -15 true false false    ; 12
+  create-node 8 17.5 true false false     ; 13
 
   link-nodes node 0 node 7 true
   link-nodes node 0 node 4 true
@@ -92,6 +96,7 @@ to create-ped  [x y k]
   ;if k = 0 [ask one-of patches with [not any? peds-here and pcolor = white] [set x pxcor set y pycor]]
   let s-point nobody
   if k = 0 [ask one-of nodes with [is-destination? = false] [set x pxcor set y pycor set s-point self]]
+
   create-peds 1 [
     set shape "person"
     set color cyan
@@ -108,17 +113,45 @@ to create-ped  [x y k]
     set had-contact-with []
     set active-contacts []
     set active-contacts-periods []
+    set label-color black
     face node 1
 
     if k = -1 [set color green set state -1]
   ]
 end
 
-to create-node [x y dest origin]
-  create-nodes 1 [ set xcor x set ycor y set is-destination? dest set shape "circle" ifelse dest = true [ set color red ] [ set color green ] set label count nodes - 1 set is-origin? origin ]
+to create-node [x y is-origin is-destination has-public-display]
+  create-nodes 1 [
+    set xcor x
+    set ycor y
+    set is-origin? is-origin
+    set is-destination? is-destination
+    set has-public-display? has-public-display
+    set shape "circle"
+
+    if not show-paths? [
+      set hidden? true
+    ]
+
+    ifelse is-destination [
+      set color red
+    ] [
+      ifelse has-public-display [
+        set shape "computer server"
+        set size 2
+        set color black
+        set hidden? false
+      ] [
+        set color green
+      ]
+    ]
+
+    if show-labels? [
+      set label count nodes - 1
+    ]
+  ]
 end
 
-;Todo: check if this can entirely be done with links and try to NOT use lists!
 to link-nodes [node1 node2 is-two-way?]
   ask node1 [
     ifelse is-two-way? [
@@ -183,11 +216,16 @@ to set-shortest-path-and-next-destination [k]
   ][
     ; pax without a navigation aid
    ifelse use-random-path? [
-    set shortest-path one-of paths
-  ][
-    ifelse use-easiest-path? [ set shortest-path first paths ][ set shortest-path last paths ]
+      set shortest-path one-of paths
+    ][
+      ifelse use-easiest-path? [
+        set shortest-path first paths
+      ][
+        set shortest-path last paths
+      ]
+    ]
   ]
-  ]
+
   set next-destination item 1 shortest-path
 end
 
@@ -231,7 +269,7 @@ to set-paths [k from-nodes]
           ask k [
             set paths lput new-route paths
           ]
-        ][
+        ] [
           ; destination not reached yet - keep on searching
           set new-from-nodes lput new-route new-from-nodes
         ]
@@ -240,23 +278,6 @@ to set-paths [k from-nodes]
 
     let pos position i new-from-nodes
     set new-from-nodes remove-item pos new-from-nodes
-
-;    foreach reachable [r ->
-;      let new-route i
-;      set new-route lput r new-route
-;
-;      if not member? r i [
-;        ifelse [is-destination?] of r [
-;          ; reached destination - valid route
-;          set paths lput new-route paths
-;        ][
-;          ; destination not reached yet - keep on searching
-;          set new-from-nodes lput new-route new-from-nodes
-;        ]
-;      ]
-;    ]
-;    let pos position i new-from-nodes
-;    set new-from-nodes remove-item pos new-from-nodes
   ]
 
   if not empty? filter [ i ->  [is-destination?] of last i = false ] new-from-nodes [
@@ -322,6 +343,10 @@ to trace-contacts
           set overall-contact-time overall-contact-time + counter-value
           set number-of-contacts number-of-contacts + 1
           set overall-contacts overall-contacts + 1
+
+          if show-contacts? [
+            stamp ;does not work completely; both agents are creating this stamp, but one would be enough
+          ]
 
           if not (ped x = nobody) [
             ask ped x [
@@ -428,6 +453,7 @@ to move
     or (ycor < 0 and ycor - speedy * dt >= 0)]
     [set flow-cum flow-cum + 1]
   plot!
+
   update-plots
 end
 @#$#@#$#@
@@ -508,10 +534,10 @@ NIL
 1
 
 PLOT
-41
-429
-391
-549
+46
+460
+396
+580
 Mean flow
 Time
 Flow
@@ -527,10 +553,10 @@ PENS
 "Temporal" 1.0 0 -11881837 true "" ""
 
 PLOT
-41
-306
-391
-426
+46
+337
+396
+457
 Speed
 Time
 Speed
@@ -967,7 +993,29 @@ SWITCH
 288
 show-paths?
 show-paths?
-0
+1
+1
+-1000
+
+SWITCH
+87
+295
+258
+328
+show-walking-paths?
+show-walking-paths?
+1
+1
+-1000
+
+SWITCH
+262
+295
+404
+328
+show-contacts?
+show-contacts?
+1
 1
 -1000
 
