@@ -142,6 +142,24 @@ to set-nodes
     ]
   ]
 
+
+  ;print gis:find-features json-nodes "ISNODE" "true"
+
+;  create-node -10 -2 false false true
+;  create-node 16 -2 false false true
+;  create-node 12 -6 false false true
+;  create-node 13 -12 false true true
+;  create-node 0 -2 false false true
+;  create-node -10 -10 true false false
+;  create-node 13 13 true false true
+;  create-node -13 13 true false false
+;  create-node 0 13 true false true
+;  create-node 0 -13 true false true
+;  create-node -18 15 true false false
+;  create-node -18 -2 true false false
+;  create-node -18 -15 true false false
+;  create-node 8 17.5 true false false
+
   link-nodes node 0 node 7 true
   link-nodes node 0 node 4 true
   link-nodes node 0 node 5 true
