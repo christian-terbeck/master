@@ -1,5 +1,4 @@
-;https://github.com/NetLogo/GIS-Extension
-extensions [gis]
+extensions [csv gis]
 
 globals [
   resource-path
@@ -76,10 +75,10 @@ to set-environment
   gis:set-transformation [-20 20 -20 20] [-20 20 -20 20]
 
   if show-logs? [
-    print word "Loading floor plan: " word resource-path "example.png"
+    print word "Loading floor plan: " word resource-path "example-floorplan.png"
   ]
 
-  import-pcolors word resource-path "example.png"
+  import-pcolors word resource-path "example-floorplan.png"
 end
 
 to create-circle
@@ -98,6 +97,10 @@ end
 to set-nodes
   if show-logs? [
     print word "Loading nodes from external source: " word resource-path "nodes-scenario1.json"
+  ]
+
+  if not file-exists? word resource-path "nodes-scenario1.json" [
+    error word "The required file " word resource-path "nodes-scenario1.json is missing."
   ]
 
   let json-nodes gis:load-dataset word resource-path "nodes-scenario1.json"
@@ -142,25 +145,24 @@ to set-nodes
     ]
   ]
 
-  link-nodes node 0 node 7 true
-  link-nodes node 0 node 4 true
-  link-nodes node 0 node 5 true
-  link-nodes node 4 node 9 true
-  link-nodes node 4 node 8 true
-  link-nodes node 4 node 2 true
-  link-nodes node 4 node 1 true
-  link-nodes node 9 node 2 true
-  link-nodes node 9 node 3 true
-  link-nodes node 2 node 1 true
-  link-nodes node 2 node 3 true
-  link-nodes node 1 node 6 true
-  link-nodes node 6 node 8 true
+  if not file-exists? word resource-path "node-links-scenario1.csv" [
+    error word "The required file " word resource-path "node-links-scenario1.csv is missing."
+  ]
 
-  link-nodes node 10 node 7 true
-  link-nodes node 11 node 0 true
-  link-nodes node 12 node 5 true
-  link-nodes node 13 node 8 true
-  link-nodes node 13 node 6 true
+  file-open word resource-path "node-links-scenario1.csv"
+
+  while [not file-at-end?] [
+    let arguments (csv:from-row file-read-line " ")
+    link-nodes item 0 arguments item 1 arguments item 2 arguments
+  ]
+
+  file-close
+end
+
+to-report string-to-list [ s ]
+  report ifelse-value not empty? s
+    [ [] ]
+    [ fput first s string-to-list but-first s ]
 end
 
 to set-agents
@@ -202,16 +204,16 @@ to create-ped  [x y k]
   ]
 end
 
-to link-nodes [node1 node2 is-two-way?]
-  ask node1 [
+to link-nodes [id1 id2 is-two-way?]
+  ask node id1 [
     ifelse is-two-way? [
-      create-link-with node2 [
+      create-link-with node id2 [
         if not show-paths? [
           hide-link
         ]
       ]
     ] [
-      create-link-to node2 [
+      create-link-to node id2 [
         if not show-paths? [
           hide-link
         ]

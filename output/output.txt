@@ -1,0 +1,1 @@
+Todo: Create output file when simulating (incl. create-output? variable) that writes the amount of contacts each 50/100 ticks etc.
