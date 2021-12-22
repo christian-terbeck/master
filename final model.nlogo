@@ -1,3 +1,5 @@
+;Todo implement scenario select and adjust resources accordingly
+
 extensions [csv gis]
 
 globals [
@@ -246,6 +248,8 @@ to set-shortest-path-and-next-destination [k]
   ifelse state = 2 [
     ; users of the navigation system
     set-navigation-system-path self
+
+    ;Todo: implement PD logic here (in method set-navigation-system path)
   ][
     ; people without navigation support
    ifelse use-random-path? [
@@ -262,7 +266,7 @@ to set-shortest-path-and-next-destination [k]
   set next-destination item 1 shortest-path
 end
 
-;Todo: refactor
+;Todo: refactor / implement PD logic
 to set-navigation-system-path [k]
   ; store it in 'shortest-path' of agent
   let filtered-paths paths ; TODO: filter paths that are not traveled yet and do not make a huge detour
@@ -319,28 +323,6 @@ to set-paths [k from-nodes]
   if not empty? filter [ i ->  [is-destination?] of last i = false ] new-from-nodes [
     set-paths self new-from-nodes
   ]
-end
-
-;Todo: refactor
-to set-next-destination [k]
-;    let available-nodes []
-;    let closest-node nobody
-;    foreach nodes [i ->
-;      if not member? i visited-nodes [
-;        set available-nodes fput i available-nodes
-;      ]
-;    ]
-;    foreach available-nodes [i ->
-;      if ((distance i + [ distance i ] of final-destination) < distance final-destination * 1.5) and distance final-destination > distance i [
-;        ifelse closest-node = nobody [
-;          set closest-node i
-;        ][
-;          if ((distance i + [ distance i ] of final-destination) < (distance closest-node + [ distance closest-node ] of final-destination)) [ set closest-node i ]
-;        ]
-;      ]
-;    ]
-;    ifelse closest-node = nobody [ set next-destination final-destination ][ set next-destination closest-node]
-;  ]
 end
 
 to trace-contacts
@@ -431,10 +413,6 @@ to move
 
   ask peds with [state > -1]
     [
-      if next-destination = nobody [
-        set-next-destination self
-      ]
-
       let hd towards next-destination
       let h hd
       let repx 0
@@ -478,13 +456,11 @@ to move
         ][
           let pos (position next-destination shortest-path) + 1
 
-          ;if (length shortest-path) < pos + 1 [
           ifelse state = 2 [
             recalculate-shortest-path self next-destination
-          ][
+          ] [
             set next-destination item pos shortest-path
           ]
-          ;]
         ]
       ]
     ]
@@ -859,7 +835,7 @@ SWITCH
 288
 show-logs?
 show-logs?
-1
+0
 1
 -1000
 
