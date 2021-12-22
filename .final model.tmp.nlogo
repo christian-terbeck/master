@@ -142,24 +142,6 @@ to set-nodes
     ]
   ]
 
-
-  ;print gis:find-features json-nodes "ISNODE" "true"
-
-;  create-node -10 -2 false false true
-;  create-node 16 -2 false false true
-;  create-node 12 -6 false false true
-;  create-node 13 -12 false true true
-;  create-node 0 -2 false false true
-;  create-node -10 -10 true false false
-;  create-node 13 13 true false true
-;  create-node -13 13 true false false
-;  create-node 0 13 true false true
-;  create-node 0 -13 true false true
-;  create-node -18 15 true false false
-;  create-node -18 -2 true false false
-;  create-node -18 -15 true false false
-;  create-node 8 17.5 true false false
-
   link-nodes node 0 node 7 true
   link-nodes node 0 node 4 true
   link-nodes node 0 node 5 true
@@ -220,37 +202,6 @@ to create-ped  [x y k]
   ]
 end
 
-to create-node [x y is-origin is-destination has-public-display]
-  create-nodes 1 [
-    set xcor x
-    set ycor y
-    set is-origin? is-origin
-    set is-destination? is-destination
-    set has-public-display? has-public-display
-;    set shape "circle"
-;
-;    if not show-paths? [
-;      set hidden? true
-;    ]
-;
-;    ifelse is-destination [
-;      set color red
-;    ] [
-;      ifelse has-public-display [
-;        set shape "computer server"
-;        set size 2
-;        set color gray
-;        set hidden? false
-;      ] [
-;        set color green
-;      ]
-;    ]
-;
-;    if show-labels? [
-;      set label count nodes - 1
-;    ]
-  ]
-end
 
 to link-nodes [node1 node2 is-two-way?]
   ask node1 [

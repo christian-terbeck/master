@@ -202,38 +202,6 @@ to create-ped  [x y k]
   ]
 end
 
-to create-node [x y is-origin is-destination has-public-display]
-  create-nodes 1 [
-    set xcor x
-    set ycor y
-    set is-origin? is-origin
-    set is-destination? is-destination
-    set has-public-display? has-public-display
-;    set shape "circle"
-;
-;    if not show-paths? [
-;      set hidden? true
-;    ]
-;
-;    ifelse is-destination [
-;      set color red
-;    ] [
-;      ifelse has-public-display [
-;        set shape "computer server"
-;        set size 2
-;        set color gray
-;        set hidden? false
-;      ] [
-;        set color green
-;      ]
-;    ]
-;
-;    if show-labels? [
-;      set label count nodes - 1
-;    ]
-  ]
-end
-
 to link-nodes [node1 node2 is-two-way?]
   ask node1 [
     ifelse is-two-way? [
