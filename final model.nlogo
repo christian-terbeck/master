@@ -41,7 +41,7 @@ peds-own [
   starting-point
   last-node
   paths
-  shortest-path
+  current-path
   number-of-unique-contacts
   number-of-contacts
   had-contact-with
@@ -82,6 +82,8 @@ to setup
   set-agents
 
   ask peds [
+    update-path self
+
     if show-circles? [
       create-circle
     ]
@@ -217,13 +219,13 @@ to set-agents
 end
 
 to create-ped  [x y k]
-  let s-point nobody
+  let first-node nobody
 
   if k = 0 [
     ask one-of nodes with [is-origin? = true] [
       set x pxcor
       set y pycor
-      set s-point self
+      set first-node self
     ]
   ]
 
@@ -236,10 +238,10 @@ to create-ped  [x y k]
     set final-destination one-of nodes with [is-destination? = true]
     set next-node nobody
     set has-reached-first-node? false
-    set starting-point s-point
-    set last-node s-point
+    set starting-point first-node
+    set last-node first-node
     set paths []
-    set shortest-path [] set-initial-path-and-next-node k
+    set current-path [] set-paths self (list (list starting-point))
     set had-contact-with []
     set active-contacts []
     set active-contacts-periods []
@@ -279,51 +281,33 @@ to plot!
 end
 
 ;Todo: refactor
-to set-initial-path-and-next-node [k]
-  set-paths self (list (list starting-point))
-  update-path k
-end
-
-;Todo: refactor
 to update-path [k]
-  ifelse is-familiar? [
-    set-navigation-system-path self
-  ][
-    set shortest-path first paths
-;   ifelse use-random-path? [
-;      set shortest-path one-of paths
-;    ][
-;      ifelse use-easiest-path? [
-;        set shortest-path first paths
-;      ][
-;        set shortest-path last paths
-;      ]
-;    ]
-  ]
+  ifelse not is-familiar? [
+    ;Todo!!! Implement public display logic here
 
-  set next-node item 1 shortest-path
-end
+    let filtered-paths paths ; TODO: filter paths that are not traveled yet and do not make a huge detour
+    ; select least traveled route out of these
+    let min-travelers 99999999999
+    let min-travelers-path nobody
 
-;Todo: refactor / implement PD logic
-to set-navigation-system-path [k]
-  let filtered-paths paths ; TODO: filter paths that are not traveled yet and do not make a huge detour
-  ; select least traveled route out of these
-  let min-travelers 99999999999
-  let min-travelers-path nobody
-
-  foreach filtered-paths [path ->
-    let current-travelers count peds with [last-node = item 0 path and next-node = item 1 path and not (self = myself)]
-    if current-travelers < min-travelers [
-      set min-travelers current-travelers
-      set min-travelers-path path
+    foreach filtered-paths [path ->
+      let current-travelers count peds with [last-node = item 0 path and next-node = item 1 path and not (self = myself)]
+      if current-travelers < min-travelers [
+        set min-travelers current-travelers
+        set min-travelers-path path
+      ]
     ]
+
+    set current-path min-travelers-path
+  ][
+    set current-path first paths
   ]
 
-  set shortest-path min-travelers-path
+  set next-node item 1 current-path
 end
 
 ;Todo: refactor
-to recalculate-shortest-path [k reached]
+to recalculate-current-path [k reached]
   set paths map [ i -> but-first i ] (filter [ i -> item 1 i = reached ] paths)
   update-path self
 end
@@ -488,12 +472,12 @@ to move
 
         die
       ][
-        let pos (position next-node shortest-path) + 1
+        let pos (position next-node current-path) + 1
 
-        ifelse is-familiar? [
-          recalculate-shortest-path self next-node
+        ifelse not is-familiar? [
+          recalculate-current-path self next-node
         ] [
-          set next-node item pos shortest-path
+          set next-node item pos current-path
         ]
       ]
     ]
@@ -579,7 +563,7 @@ number-of-people
 number-of-people
 0
 200
-16.0
+18.0
 1
 1
 NIL
