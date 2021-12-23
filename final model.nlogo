@@ -1,7 +1,19 @@
+;Todo:
+; - Design interface
+; - Comment entire code
+; - Refactor methods
+; - Add model description at the top
+; - Implement public display logic
+; - Fix bugs (e.g. contact stamps)
+
 extensions [csv gis]
 
 globals [
   resource-path
+  output-path
+  output-steps
+  output-data
+  output-ticks
   time
   mean-speed
   mean-visiting-time
@@ -49,6 +61,23 @@ to setup
 
   set resource-path word "resources/" word scenario "/"
 
+  if write-output? [
+    set output-steps 10
+
+    let datetime date-and-time
+
+    set datetime replace-item 2 datetime "-"
+    set datetime replace-item 5 datetime "-"
+    set datetime replace-item 8 datetime "-"
+    set datetime replace-item 12 datetime "_"
+    set datetime replace-item 15 datetime "_"
+
+    set output-path word "output/" word scenario word "/" word datetime ".csv"
+
+    set output-data []
+    set output-ticks []
+  ]
+
   set-default-shape peds "person"
   set-default-shape circles "circle 2"
 
@@ -72,7 +101,7 @@ to setup
 end
 
 to set-environment
-  gis:set-transformation [-20 20 -20 20] [-20 20 -20 20]
+  gis:set-transformation [-20 20 -20 20] [-20 20 -20 20] ;this may also vary depending on the scenario!
 
   if show-logs? [
     print word "Loading floor plan: " word resource-path "floorplan.png"
@@ -472,7 +501,15 @@ to move
     set ycor ycor + speedy * dt
   ]
 
-  if count peds with [state > -1] < 1 [
+  if count peds < 1 [
+    if write-output? [
+      csv:to-file output-path (list (output-ticks) (output-data))
+
+      if show-logs? [
+        print word "Created output file " output-path
+      ]
+    ]
+
     if show-logs? [
       print "- Simulation finished -"
     ]
@@ -494,6 +531,11 @@ to move
 
   plot!
   update-plots
+
+  if write-output? and ticks mod output-steps = 0 [
+     set output-ticks lput ticks output-ticks
+     set output-data lput round (overall-contacts / 2) output-data
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -532,7 +574,7 @@ Nb-peds
 Nb-peds
 0
 200
-11.0
+16.0
 1
 1
 NIL
@@ -837,7 +879,7 @@ SWITCH
 288
 show-logs?
 show-logs?
-0
+1
 1
 -1000
 
@@ -1075,7 +1117,7 @@ SWITCH
 44
 write-output?
 write-output?
-1
+0
 1
 -1000
 
