@@ -610,8 +610,8 @@ SLIDER
 number-of-people
 number-of-people
 0
-200
-1.0
+50
+3.0
 1
 1
 NIL
