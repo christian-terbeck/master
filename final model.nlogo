@@ -34,6 +34,7 @@ peds-own [
   speedx
   speedy
   is-familiar?
+  is-visiting?
   final-destination
   next-destination
   has-reached-first-node?
@@ -66,14 +67,7 @@ to setup
   if write-output? [
     set output-steps 10
 
-    let datetime date-and-time
-
-    set datetime replace-item 2 datetime "-"
-    set datetime replace-item 5 datetime "-"
-    set datetime replace-item 8 datetime "-"
-    set datetime replace-item 12 datetime "_"
-    set datetime replace-item 15 datetime "_"
-
+    let datetime format-date-time date-and-time
     set output-path word "output/" word scenario word "/" word datetime ".csv"
 
     set output-ticks []
@@ -194,6 +188,16 @@ to set-nodes
   ]
 
   file-close
+end
+
+to-report format-date-time [ datetime ]
+  set datetime replace-item 2 datetime "-"
+  set datetime replace-item 5 datetime "-"
+  set datetime replace-item 8 datetime "-"
+  set datetime replace-item 12 datetime "_"
+  set datetime replace-item 15 datetime "_"
+
+  report datetime
 end
 
 to-report string-to-list [ s ]
@@ -1118,7 +1122,7 @@ SWITCH
 44
 write-output?
 write-output?
-1
+0
 1
 -1000
 
