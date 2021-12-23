@@ -281,8 +281,14 @@ to plot!
 end
 
 to update-path [k n]
-  ifelse not is-familiar? [
-    let available-paths paths ;Todo: maybe also filter paths that are not traveled yet and do not make a huge detour..?
+  let current-node-has-display? false
+
+  ask n [
+    set current-node-has-display? has-public-display?
+  ]
+
+  ifelse not is-familiar? and current-node-has-display? [
+    let available-paths paths
 
     let adjacent-nodes []
     let has-detected-current-node? false
@@ -312,7 +318,13 @@ to update-path [k n]
       ask n [
         face cur-node
 
-        if detected-people = -1 or (detected-people > 0 and count peds in-cone area-of-awareness 70 with [not (self = myself)] < detected-people) [
+        if show-areas-of-awareness? [
+          ask patches in-cone area-of-awareness angle-of-awareness [
+            set pcolor yellow
+          ]
+        ]
+
+        if detected-people = -1 or (detected-people > 0 and count peds in-cone area-of-awareness angle-of-awareness with [not (self = myself)] < detected-people) [
           set detected-people count peds in-cone area-of-awareness 70 with [not (self = myself)]
           set least-crowded-adjacent-node cur-node
         ]
@@ -599,7 +611,7 @@ number-of-people
 number-of-people
 0
 200
-23.0
+1.0
 1
 1
 NIL
@@ -1134,6 +1146,32 @@ stop-at-ticks
 1
 0
 Number
+
+SLIDER
+1175
+8
+1347
+41
+angle-of-awareness
+angle-of-awareness
+0
+90
+30.0
+1
+1
+NIL
+HORIZONTAL
+
+SWITCH
+1374
+11
+1580
+44
+show-areas-of-awareness?
+show-areas-of-awareness?
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
