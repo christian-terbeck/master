@@ -284,12 +284,8 @@ end
 ;Todo: refactor
 to set-shortest-path-and-next-destination [k]
   ifelse is-familiar? [
-    ; users of the navigation system
     set-navigation-system-path self
-
-    ;Todo: implement PD logic here (in method set-navigation-system path)
   ][
-    ; people without navigation support
    ifelse use-random-path? [
       set shortest-path one-of paths
     ][
@@ -306,7 +302,6 @@ end
 
 ;Todo: refactor / implement PD logic
 to set-navigation-system-path [k]
-
   let filtered-paths paths ; TODO: filter paths that are not traveled yet and do not make a huge detour
   ; select least traveled route out of these
   let min-travelers 99999999999
@@ -315,7 +310,6 @@ to set-navigation-system-path [k]
   foreach filtered-paths [path ->
     let current-travelers count peds with [last-node = item 0 path and next-destination = item 1 path and not (self = myself)]
     if current-travelers < min-travelers [
-      ;print word "Travelers: " word current-travelers word " - path: " path
       set min-travelers current-travelers
       set min-travelers-path path
     ]
@@ -326,7 +320,6 @@ end
 
 ;Todo: refactor
 to recalculate-shortest-path [k reached]
-  ; update possible paths from this node
   set paths map [ i -> but-first i ] (filter [ i -> item 1 i = reached ] paths)
   set-shortest-path-and-next-destination self
 end
@@ -462,7 +455,7 @@ to move
     ask peds in-cone (D) 120 with [not (self = myself)] [
       ifelse distance final-destination < D or distance next-destination < D [
         set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-       set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+        set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
       ][
         set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
        set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
