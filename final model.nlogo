@@ -33,7 +33,7 @@ breed [peds ped]
 peds-own [
   speedx
   speedy
-  state
+  is-familiar?
   final-destination
   next-destination
   has-reached-first-node?
@@ -197,15 +197,17 @@ to set-nodes
 end
 
 to-report string-to-list [ s ]
-  report ifelse-value not empty? s
-    [ [] ]
-    [ fput first s string-to-list but-first s ]
+  report ifelse-value not empty? s [
+    []
+  ] [
+    fput first s string-to-list but-first s
+  ]
 end
 
 to set-agents
   repeat nb-peds [create-ped 0 0 0]
   ask n-of round (p * nb-peds) peds [
-    set state 2
+    set is-familiar? true
     set shape "person doctor"
     set color blue
   ]
@@ -227,6 +229,7 @@ to create-ped  [x y k]
     set color cyan
     set xcor x + random-normal 0 .2
     set ycor y + random-normal 0 .2
+    set is-familiar? false
     set final-destination one-of nodes with [is-destination? = true]
     set next-destination nobody
     set has-reached-first-node? false
@@ -280,7 +283,7 @@ end
 
 ;Todo: refactor
 to set-shortest-path-and-next-destination [k]
-  ifelse state = 2 [
+  ifelse is-familiar? [
     ; users of the navigation system
     set-navigation-system-path self
 
@@ -303,12 +306,12 @@ end
 
 ;Todo: refactor / implement PD logic
 to set-navigation-system-path [k]
-  ; store it in 'shortest-path' of agent
+
   let filtered-paths paths ; TODO: filter paths that are not traveled yet and do not make a huge detour
   ; select least traveled route out of these
   let min-travelers 99999999999
   let min-travelers-path nobody
-  ;print word "All paths: " paths
+
   foreach filtered-paths [path ->
     let current-travelers count peds with [last-node = item 0 path and next-destination = item 1 path and not (self = myself)]
     if current-travelers < min-travelers [
@@ -317,7 +320,7 @@ to set-navigation-system-path [k]
       set min-travelers-path path
     ]
   ]
-  ;print word "Min Travelers: " word min-travelers word " - min path: " min-travelers-path
+
   set shortest-path min-travelers-path
 end
 
@@ -399,7 +402,7 @@ to trace-contacts
           set overall-contacts overall-contacts + 1
 
           if show-contacts? [
-            stamp ;does not work completely; both agents are creating this stamp, but one would be enough
+            stamp ;Todo: does not work completely; both agents are creating this stamp, but one would be enough
           ]
 
           if not (ped x = nobody) [
@@ -446,61 +449,58 @@ to move
   set time precision (time + dt) 5 tick-advance 1
   trace-contacts
 
-  ask peds with [state > -1]
-    [
-      let hd towards next-destination
-      let h hd
-      let repx 0
-      let repy 0
+  ask peds [
+    let hd towards next-destination
+    let h hd
+    let repx 0
+    let repy 0
 
-      if not (speedx * speedy = 0) [
-        set h atan speedx speedy
-      ]
+    if not (speedx * speedy = 0) [
+      set h atan speedx speedy
+    ]
 
-      ask peds in-cone (D) 120 with [not (self = myself)] [
-        ifelse distance final-destination < D or distance next-destination < D [
-          set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-         set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
-        ][
-          set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-         set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
-        ]
-      ]
-
-      ask patches in-radius (D) with [pcolor = 0] [
+    ask peds in-cone (D) 120 with [not (self = myself)] [
+      ifelse distance final-destination < D or distance next-destination < D [
+        set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
+       set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+      ][
         set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-        set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+       set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
       ]
+    ]
 
-      set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
-      set speedy speedy + dt * (repy + (V0 * cos hd - speedy) / Tr)
+    ask patches in-radius (D) with [pcolor = 0] [
+      set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
+      set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+    ]
 
-      if distance next-destination < D / 2 [
-        set last-node next-destination
+    set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
+    set speedy speedy + dt * (repy + (V0 * cos hd - speedy) / Tr)
 
-        ifelse distance final-destination < D / 2 [
-          if show-logs? [
-            print word self " has reached its destination"
-          ]
+    if distance next-destination < D / 2 [
+      set last-node next-destination
 
-          ask in-link-neighbors [
-            die
-          ]
+      ifelse distance final-destination < D / 2 [
+        if show-logs? [
+          print word self " has reached its destination"
+        ]
 
+        ask in-link-neighbors [
           die
-        ][
-          let pos (position next-destination shortest-path) + 1
+        ]
 
-          ifelse state = 2 [
-            recalculate-shortest-path self next-destination
-          ] [
-            set next-destination item pos shortest-path
-          ]
+        die
+      ][
+        let pos (position next-destination shortest-path) + 1
+
+        ifelse is-familiar? [
+          recalculate-shortest-path self next-destination
+        ] [
+          set next-destination item pos shortest-path
         ]
       ]
     ]
 
-  ask peds [
     set xcor xcor + speedx * dt
     set ycor ycor + speedy * dt
   ]
@@ -528,12 +528,14 @@ to move
     stop
   ]
 
-  if count peds with [state > -1] > 1 [
-    set mean-speed mean-speed + mean [sqrt(speedx ^ 2 + speedy ^ 2)] of peds with [state > -1]
+  ;Todo remove or refactor things like mean speed, cum flow etc.
+
+  if count peds > 1 [
+    set mean-speed mean-speed + mean [sqrt(speedx ^ 2 + speedy ^ 2)] of peds
   ]
 
-  if count peds with [state > -1] > 1 [
-    set stddev-speed stddev-speed + sqrt(variance [sqrt(speedx ^ 2 + speedy ^ 2)] of peds with [state > -1])
+  if count peds > 1 [
+    set stddev-speed stddev-speed + sqrt(variance [sqrt(speedx ^ 2 + speedy ^ 2)] of peds)
   ]
 
   ask peds with [(xcor > 0 and xcor - speedx * dt <= 0) or (xcor < 0 and xcor - speedx * dt >= 0) or (ycor > 0 and ycor - speedy * dt <= 0) or (ycor < 0 and ycor - speedy * dt >= 0)] [
@@ -690,7 +692,7 @@ MONITOR
 252
 106
 Mean speed
-mean [sqrt(speedx ^ 2 + speedy ^ 2)] of peds with [state > -1]
+mean [sqrt(speedx ^ 2 + speedy ^ 2)] of peds
 5
 1
 11
@@ -1123,7 +1125,7 @@ SWITCH
 44
 write-output?
 write-output?
-0
+1
 1
 -1000
 
@@ -1133,7 +1135,7 @@ INPUTBOX
 415
 70
 stop-at-ticks
-100.0
+100000.0
 1
 0
 Number
