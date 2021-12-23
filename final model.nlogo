@@ -12,8 +12,10 @@ globals [
   resource-path
   output-path
   output-steps
-  output-data
   output-ticks
+  output-contacts
+  output-critical-contacts
+  output-unique-contacts
   time
   mean-speed
   mean-visiting-time
@@ -74,8 +76,10 @@ to setup
 
     set output-path word "output/" word scenario word "/" word datetime ".csv"
 
-    set output-data []
     set output-ticks []
+    set output-contacts []
+    set output-critical-contacts []
+    set output-unique-contacts []
   ]
 
   set-default-shape peds "person"
@@ -501,9 +505,16 @@ to move
     set ycor ycor + speedy * dt
   ]
 
-  if count peds < 1 [
+  if write-output? and ticks mod output-steps = 0 [
+    set output-ticks lput ticks output-ticks
+    set output-contacts lput round (overall-contacts / 2) output-contacts
+    set output-critical-contacts lput round (critical-contacts / 2) output-critical-contacts
+    set output-unique-contacts lput round (unique-contacts / 2) output-unique-contacts
+  ]
+
+  if count peds < 1 or ticks = stop-at-ticks [
     if write-output? [
-      csv:to-file output-path (list (output-ticks) (output-data))
+      csv:to-file output-path (list (output-ticks) (output-contacts) (output-critical-contacts) (output-unique-contacts))
 
       if show-logs? [
         print word "Created output file " output-path
@@ -531,11 +542,6 @@ to move
 
   plot!
   update-plots
-
-  if write-output? and ticks mod output-steps = 0 [
-     set output-ticks lput ticks output-ticks
-     set output-data lput round (overall-contacts / 2) output-data
-  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -1120,6 +1126,17 @@ write-output?
 0
 1
 -1000
+
+INPUTBOX
+334
+10
+415
+70
+stop-at-ticks
+100.0
+1
+0
+Number
 
 @#$#@#$#@
 ## WHAT IS IT?
