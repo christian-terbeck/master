@@ -66,9 +66,7 @@ to setup
 
   if write-output? [
     set output-steps 10
-
-    let datetime format-date-time date-and-time
-    set output-path word "output/" word scenario word "/" word datetime ".csv"
+    set output-path word "output/" word scenario word "/" word format-date-time date-and-time ".csv"
 
     set output-ticks []
     set output-contacts []
