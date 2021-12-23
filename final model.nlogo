@@ -36,7 +36,7 @@ peds-own [
   is-familiar?
   is-visiting?
   final-destination
-  next-destination
+  next-node
   has-reached-first-node?
   starting-point
   last-node
@@ -97,7 +97,7 @@ to setup
 end
 
 to set-environment
-  gis:set-transformation [-20 20 -20 20] [-20 20 -20 20] ;this may also vary depending on the scenario!
+  gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
 
   if show-logs? [
     print word "Loading floor plan: " word resource-path "floorplan.png"
@@ -207,8 +207,9 @@ to-report string-to-list [ s ]
 end
 
 to set-agents
-  repeat nb-peds [create-ped 0 0 0]
-  ask n-of round (p * nb-peds) peds [
+  repeat number-of-people [create-ped 0 0 0]
+
+  ask n-of round (familiarity-rate * number-of-people) peds [
     set is-familiar? true
     set shape "person doctor"
     set color blue
@@ -233,12 +234,12 @@ to create-ped  [x y k]
     set ycor y + random-normal 0 .2
     set is-familiar? false
     set final-destination one-of nodes with [is-destination? = true]
-    set next-destination nobody
+    set next-node nobody
     set has-reached-first-node? false
     set starting-point s-point
     set last-node s-point
     set paths []
-    set shortest-path [] set-initial-path-and-next-destination k
+    set shortest-path [] set-initial-path-and-next-node k
     set had-contact-with []
     set active-contacts []
     set active-contacts-periods []
@@ -272,34 +273,35 @@ to plot!
   plotxy time stddev-speed / ticks
   set-current-plot "Mean flow" set-plot-y-range 0 2
   set-current-plot-pen "Spatial"
-  plotxy time (mean-speed / ticks * Nb-peds / world-width / world-height)
+  plotxy time (mean-speed / ticks * number-of-people / world-width / world-height)
   set-current-plot-pen "Temporal"
   plotxy time flow-cum / time / world-height
 end
 
 ;Todo: refactor
-to set-initial-path-and-next-destination [k]
+to set-initial-path-and-next-node [k]
   set-paths self (list (list starting-point))
-  set-shortest-path-and-next-destination k
+  update-path k
 end
 
 ;Todo: refactor
-to set-shortest-path-and-next-destination [k]
+to update-path [k]
   ifelse is-familiar? [
     set-navigation-system-path self
   ][
-   ifelse use-random-path? [
-      set shortest-path one-of paths
-    ][
-      ifelse use-easiest-path? [
-        set shortest-path first paths
-      ][
-        set shortest-path last paths
-      ]
-    ]
+    set shortest-path first paths
+;   ifelse use-random-path? [
+;      set shortest-path one-of paths
+;    ][
+;      ifelse use-easiest-path? [
+;        set shortest-path first paths
+;      ][
+;        set shortest-path last paths
+;      ]
+;    ]
   ]
 
-  set next-destination item 1 shortest-path
+  set next-node item 1 shortest-path
 end
 
 ;Todo: refactor / implement PD logic
@@ -310,7 +312,7 @@ to set-navigation-system-path [k]
   let min-travelers-path nobody
 
   foreach filtered-paths [path ->
-    let current-travelers count peds with [last-node = item 0 path and next-destination = item 1 path and not (self = myself)]
+    let current-travelers count peds with [last-node = item 0 path and next-node = item 1 path and not (self = myself)]
     if current-travelers < min-travelers [
       set min-travelers current-travelers
       set min-travelers-path path
@@ -323,7 +325,7 @@ end
 ;Todo: refactor
 to recalculate-shortest-path [k reached]
   set paths map [ i -> but-first i ] (filter [ i -> item 1 i = reached ] paths)
-  set-shortest-path-and-next-destination self
+  update-path self
 end
 
 ;Todo: refactor
@@ -445,7 +447,7 @@ to move
   trace-contacts
 
   ask peds [
-    let hd towards next-destination
+    let hd towards next-node
     let h hd
     let repx 0
     let repy 0
@@ -455,12 +457,12 @@ to move
     ]
 
     ask peds in-cone (D) 120 with [not (self = myself)] [
-      ifelse distance final-destination < D or distance next-destination < D [
+      ifelse distance final-destination < D or distance next-node < D [
         set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
         set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
-      ][
+      ] [
         set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-       set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+        set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
       ]
     ]
 
@@ -472,8 +474,8 @@ to move
     set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
     set speedy speedy + dt * (repy + (V0 * cos hd - speedy) / Tr)
 
-    if distance next-destination < D / 2 [
-      set last-node next-destination
+    if distance next-node < D / 2 [
+      set last-node next-node
 
       ifelse distance final-destination < D / 2 [
         if show-logs? [
@@ -486,12 +488,12 @@ to move
 
         die
       ][
-        let pos (position next-destination shortest-path) + 1
+        let pos (position next-node shortest-path) + 1
 
         ifelse is-familiar? [
-          recalculate-shortest-path self next-destination
+          recalculate-shortest-path self next-node
         ] [
-          set next-destination item pos shortest-path
+          set next-node item pos shortest-path
         ]
       ]
     ]
@@ -573,8 +575,8 @@ SLIDER
 109
 193
 142
-Nb-peds
-Nb-peds
+number-of-people
+number-of-people
 0
 200
 16.0
@@ -709,7 +711,7 @@ MONITOR
 178
 106
 Density
-Nb-peds / world-width / world-height
+number-of-people / world-width / world-height
 5
 1
 11
@@ -760,17 +762,6 @@ false
 "" ""
 PENS
 "default" 1.0 0 -11053225 true "" ""
-
-SWITCH
-87
-215
-288
-248
-use-easiest-path?
-use-easiest-path?
-0
-1
--1000
 
 SLIDER
 91
@@ -854,8 +845,8 @@ SLIDER
 109
 398
 142
-p
-p
+familiarity-rate
+familiarity-rate
 0
 1
 0.7
@@ -865,21 +856,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-86
-180
-289
-213
-use-random-path?
-use-random-path?
-1
-1
--1000
-
-SWITCH
-211
-255
-328
-288
+212
+220
+329
+253
 show-logs?
 show-logs?
 1
@@ -963,7 +943,7 @@ MONITOR
 1714
 144
 Avg. number of contacts per person
-overall-contacts / 2 / Nb-peds
+overall-contacts / 2 / number-of-people
 3
 1
 11
@@ -1029,7 +1009,7 @@ true
 "" ""
 PENS
 "overall-contacts" 1.0 0 -16777216 true "" "plot (overall-contacts / 2)"
-"average-contacts" 1.0 0 -7500403 true "" "plot (overall-contacts /  Nb-peds) * 2"
+"average-contacts" 1.0 0 -7500403 true "" "plot (overall-contacts /  number-of-people) * 2"
 "critical-contacts" 1.0 0 -2674135 true "" "plot (critical-contacts / 2)"
 "unique-contacts" 1.0 0 -955883 true "" "plot (unique-contacts / 2)"
 
@@ -1071,10 +1051,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-87
-255
-205
-288
+88
+220
+206
+253
 show-paths?
 show-paths?
 1
@@ -1082,10 +1062,10 @@ show-paths?
 -1000
 
 SWITCH
-87
-295
-258
-328
+88
+260
+259
+293
 show-walking-paths?
 show-walking-paths?
 1
@@ -1093,10 +1073,10 @@ show-walking-paths?
 -1000
 
 SWITCH
-262
-295
-404
-328
+263
+260
+405
+293
 show-contacts?
 show-contacts?
 1
@@ -1120,7 +1100,7 @@ SWITCH
 44
 write-output?
 write-output?
-0
+1
 1
 -1000
 
