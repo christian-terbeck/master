@@ -35,10 +35,10 @@ peds-own [
   speedy
   is-familiar?
   is-visiting?
-  final-destination
+  destination
   next-node
   has-reached-first-node?
-  starting-point
+  first-node
   last-node
   paths
   current-path
@@ -82,7 +82,7 @@ to setup
   set-agents
 
   ask peds [
-    update-path self
+    update-path self first-node
 
     if show-circles? [
       create-circle
@@ -219,13 +219,13 @@ to set-agents
 end
 
 to create-ped  [x y k]
-  let first-node nobody
+  let tmp-first-node nobody
 
   if k = 0 [
     ask one-of nodes with [is-origin? = true] [
       set x pxcor
       set y pycor
-      set first-node self
+      set tmp-first-node self
     ]
   ]
 
@@ -235,13 +235,13 @@ to create-ped  [x y k]
     set xcor x + random-normal 0 .2
     set ycor y + random-normal 0 .2
     set is-familiar? false
-    set final-destination one-of nodes with [is-destination? = true]
+    set destination one-of nodes with [is-destination? = true]
     set next-node nobody
     set has-reached-first-node? false
-    set starting-point first-node
+    set first-node tmp-first-node
     set last-node first-node
     set paths []
-    set current-path [] set-paths self (list (list starting-point))
+    set current-path [] set-paths self (list (list tmp-first-node))
     set had-contact-with []
     set active-contacts []
     set active-contacts-periods []
@@ -280,25 +280,61 @@ to plot!
   plotxy time flow-cum / time / world-height
 end
 
-;Todo: refactor
-to update-path [k]
+to update-path [k n]
   ifelse not is-familiar? [
-    ;Todo!!! Implement public display logic here
+    let available-paths paths ;Todo: maybe also filter paths that are not traveled yet and do not make a huge detour..?
 
-    let filtered-paths paths ; TODO: filter paths that are not traveled yet and do not make a huge detour
-    ; select least traveled route out of these
-    let min-travelers 99999999999
-    let min-travelers-path nobody
+    let adjacent-nodes []
+    let has-detected-current-node? false
 
-    foreach filtered-paths [path ->
-      let current-travelers count peds with [last-node = item 0 path and next-node = item 1 path and not (self = myself)]
-      if current-travelers < min-travelers [
-        set min-travelers current-travelers
-        set min-travelers-path path
+    foreach available-paths [ path-nodes ->
+      set has-detected-current-node? false
+
+      foreach path-nodes [ cur-node ->
+        if has-detected-current-node? [
+          if not member? cur-node adjacent-nodes [
+            set adjacent-nodes lput cur-node adjacent-nodes
+          ]
+
+          set has-detected-current-node? false
+        ]
+
+        if cur-node = n [
+          set has-detected-current-node? true
+        ]
       ]
     ]
 
-    set current-path min-travelers-path
+    let detected-people -1
+    let least-crowded-adjacent-node nobody
+
+    foreach adjacent-nodes [ cur-node ->
+      ask n [
+        face cur-node
+
+        if detected-people = -1 or (detected-people > 0 and count peds in-cone area-of-awareness 70 with [not (self = myself)] < detected-people) [
+          set detected-people count peds in-cone area-of-awareness 70 with [not (self = myself)]
+          set least-crowded-adjacent-node cur-node
+        ]
+      ]
+    ]
+
+    set has-detected-current-node? false
+    let has-found-least-crowded-option? false
+
+    foreach available-paths [ path-nodes ->
+      foreach path-nodes [ cur-node ->
+        if not has-found-least-crowded-option? and has-detected-current-node? and cur-node = least-crowded-adjacent-node [
+          set current-path path-nodes
+          set has-detected-current-node? false
+          set has-found-least-crowded-option? true
+        ]
+
+        if cur-node = n [
+          set has-detected-current-node? true
+        ]
+      ]
+    ]
   ][
     set current-path first paths
   ]
@@ -307,9 +343,9 @@ to update-path [k]
 end
 
 ;Todo: refactor
-to recalculate-current-path [k reached]
-  set paths map [ i -> but-first i ] (filter [ i -> item 1 i = reached ] paths)
-  update-path self
+to recalculate-current-path [k n]
+  set paths map [ i -> but-first i ] (filter [ i -> item 1 i = n ] paths)
+  update-path self n
 end
 
 ;Todo: refactor
@@ -414,7 +450,7 @@ to trace-contacts
           ]
         ] [
           if show-logs? [
-            print word "contact between " word self word " and Person " word x word " with a duration of " word counter-value " ticks will not be considered due to its short duration"
+            print word "Contact between " word self word " and Person " word x word " with a duration of " word counter-value " ticks will not be considered due to its short duration"
           ]
         ]
       ]
@@ -441,7 +477,7 @@ to move
     ]
 
     ask peds in-cone (D) 120 with [not (self = myself)] [
-      ifelse distance final-destination < D or distance next-node < D [
+      ifelse distance destination < D or distance next-node < D [
         set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
         set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
       ] [
@@ -461,7 +497,7 @@ to move
     if distance next-node < D / 2 [
       set last-node next-node
 
-      ifelse distance final-destination < D / 2 [
+      ifelse distance destination < D / 2 [
         if show-logs? [
           print word self " has reached its destination"
         ]
@@ -563,7 +599,7 @@ number-of-people
 number-of-people
 0
 200
-18.0
+23.0
 1
 1
 NIL
@@ -833,7 +869,7 @@ familiarity-rate
 familiarity-rate
 0
 1
-0.7
+0.0
 .05
 1
 NIL
