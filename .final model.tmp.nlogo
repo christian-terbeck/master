@@ -67,7 +67,7 @@ to setup
   ]
 
   if show-logs? [
-    print "- Setup complete, you may start the simulation now -"
+    print "-  simulation -"
   ]
 end
 
