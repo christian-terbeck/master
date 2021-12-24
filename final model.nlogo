@@ -35,10 +35,11 @@ peds-own [
   speedy
   is-familiar?
   is-visiting?
+  has-visited?
+  origin
   destination
-  next-node
   has-reached-first-node?
-  first-node
+  next-node
   last-node
   paths
   current-path
@@ -80,18 +81,6 @@ to setup
   set-environment
   set-nodes
   set-agents
-
-  ask peds [
-    update-path self first-node
-
-    if show-circles? [
-      create-circle
-    ]
-
-    if show-walking-paths? [
-      pen-down
-    ]
-  ]
 
   if show-logs? [
     print "- Setup complete, you may start the simulation now -"
@@ -190,7 +179,7 @@ to set-nodes
   file-close
 end
 
-to-report format-date-time [ datetime ]
+to-report format-date-time [datetime]
   set datetime replace-item 2 datetime "-"
   set datetime replace-item 5 datetime "-"
   set datetime replace-item 8 datetime "-"
@@ -200,7 +189,7 @@ to-report format-date-time [ datetime ]
   report datetime
 end
 
-to-report string-to-list [ s ]
+to-report string-to-list [s]
   report ifelse-value not empty? s [
     []
   ] [
@@ -216,9 +205,22 @@ to set-agents
     set shape "person doctor"
     set color blue
   ]
+
+  ask peds [
+    init-paths self origin destination
+    update-path self origin
+
+    if show-circles? [
+      create-circle
+    ]
+
+    if show-walking-paths? [
+      pen-down
+    ]
+  ]
 end
 
-to create-ped  [x y k]
+to create-ped [x y k]
   let tmp-first-node nobody
 
   if k = 0 [
@@ -235,13 +237,11 @@ to create-ped  [x y k]
     set xcor x + random-normal 0 .2
     set ycor y + random-normal 0 .2
     set is-familiar? false
+    set is-visiting? true ;temporarily
+    set has-visited? false
+    set origin tmp-first-node
     set destination one-of nodes with [is-destination? = true]
-    set next-node nobody
-    set has-reached-first-node? false
-    set first-node tmp-first-node
-    set last-node first-node
-    set paths []
-    set current-path [] set-paths self (list (list tmp-first-node))
+
     set had-contact-with []
     set active-contacts []
     set active-contacts-periods []
@@ -280,6 +280,17 @@ to plot!
   plotxy time flow-cum / time / world-height
 end
 
+to init-paths [k node1 node2]
+  set origin node1
+  set destination node2
+  set next-node nobody
+  set has-reached-first-node? false
+  set last-node node1
+  set paths []
+  set current-path []
+  set-paths self (list (list node1))
+end
+
 to update-path [k n]
   let current-node-has-display? false
 
@@ -293,10 +304,10 @@ to update-path [k n]
     let adjacent-nodes []
     let has-detected-current-node? false
 
-    foreach available-paths [ path-nodes ->
+    foreach available-paths [path-nodes ->
       set has-detected-current-node? false
 
-      foreach path-nodes [ cur-node ->
+      foreach path-nodes [cur-node ->
         if has-detected-current-node? [
           if not member? cur-node adjacent-nodes [
             set adjacent-nodes lput cur-node adjacent-nodes
@@ -314,7 +325,7 @@ to update-path [k n]
     let detected-people -1
     let least-crowded-adjacent-node nobody
 
-    foreach adjacent-nodes [ cur-node ->
+    foreach adjacent-nodes [cur-node ->
       ask n [
         face cur-node
 
@@ -334,8 +345,8 @@ to update-path [k n]
     set has-detected-current-node? false
     let has-found-least-crowded-option? false
 
-    foreach available-paths [ path-nodes ->
-      foreach path-nodes [ cur-node ->
+    foreach available-paths [path-nodes ->
+      foreach path-nodes [cur-node ->
         if not has-found-least-crowded-option? and has-detected-current-node? and cur-node = least-crowded-adjacent-node [
           set current-path path-nodes
           set has-detected-current-node? false
@@ -347,7 +358,7 @@ to update-path [k n]
         ]
       ]
     ]
-  ][
+  ] [
     set current-path first paths
   ]
 
@@ -356,39 +367,40 @@ end
 
 ;Todo: refactor
 to recalculate-current-path [k n]
-  set paths map [ i -> but-first i ] (filter [ i -> item 1 i = n ] paths)
+  set paths map [i -> but-first i] (filter [i -> item 1 i = n] paths)
   update-path self n
 end
 
 ;Todo: refactor
-to set-paths [k from-nodes]
-  let new-from-nodes from-nodes
+to set-paths [k origin-nodes]
+  let new-origin-nodes origin-nodes
+  let destination-node destination
 
-  foreach from-nodes [i ->
+  foreach origin-nodes [i ->
     let reachable-nodes [out-link-neighbors] of last i
+
     ask reachable-nodes [
       let new-route i
       set new-route lput self new-route
 
       if not member? self i [
-        ifelse [is-destination?] of self [
-          ; reached destination - valid route
+        ;ifelse [is-destination?] of self [
+        ifelse self = destination-node [
           ask k [
             set paths lput new-route paths
           ]
         ] [
-          ; destination not reached yet - keep on searching
-          set new-from-nodes lput new-route new-from-nodes
+          set new-origin-nodes lput new-route new-origin-nodes
         ]
       ]
     ]
 
-    let pos position i new-from-nodes
-    set new-from-nodes remove-item pos new-from-nodes
+    let pos position i new-origin-nodes
+    set new-origin-nodes remove-item pos new-origin-nodes
   ]
 
-  if not empty? filter [ i ->  [is-destination?] of last i = false ] new-from-nodes [
-    set-paths self new-from-nodes
+  if not empty? filter [i -> [is-destination?] of last i = false] new-origin-nodes [
+    set-paths self new-origin-nodes
   ]
 end
 
@@ -417,7 +429,7 @@ to trace-contacts
       set contact-distance contact-distance + distance myself
     ]
 
-    foreach active-contacts [ x ->
+    foreach active-contacts [x ->
       if not member? x has-contact-to [
         let pos position x active-contacts
         let counter-value item pos active-contacts-periods
@@ -514,12 +526,19 @@ to move
           print word self " has reached its destination"
         ]
 
-        ask in-link-neighbors [
+        ifelse is-visiting? and not has-visited? [
+          init-paths self destination origin
+          update-path self origin
+
+          set has-visited? true
+        ] [
+          ask in-link-neighbors [
+            die
+          ]
+
           die
         ]
-
-        die
-      ][
+      ] [
         let pos (position next-node current-path) + 1
 
         ifelse not is-familiar? [
@@ -611,7 +630,7 @@ number-of-people
 number-of-people
 0
 50
-3.0
+2.0
 1
 1
 NIL
@@ -1169,7 +1188,7 @@ SWITCH
 44
 show-areas-of-awareness?
 show-areas-of-awareness?
-0
+1
 1
 -1000
 
