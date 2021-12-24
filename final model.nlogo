@@ -384,7 +384,6 @@ to set-paths [k origin-nodes]
       set new-route lput self new-route
 
       if not member? self i [
-        ;ifelse [is-destination?] of self [
         ifelse self = destination-node [
           ask k [
             set paths lput new-route paths
