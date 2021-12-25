@@ -1,9 +1,12 @@
+; @model Optimizing Social Distance Keeping in Indoor Environments via a Public Display Navigation Support System
+; @author Christian Terbeck <christian.terbeck@uni-muenster.de>
+;
+; @description This model simulates the movement of people in indoor environments while considering social forces.
+;              Public displays are used to guide the people with the aim to reduce contacts between them.
+
 ;Todo:
 ; - Design interface
-; - Comment entire code
-; - Refactor methods
-; - Add model description at the top
-; - Implement public display logic
+; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)
 ; - Fix bugs (e.g. contact stamps)
 
 extensions [csv gis]
@@ -11,7 +14,6 @@ extensions [csv gis]
 globals [
   resource-path
   output-path
-  output-steps
   output-ticks
   output-contacts
   output-critical-contacts
@@ -59,6 +61,9 @@ nodes-own [
 
 breed [circles circle]
 
+; @method setup
+; @description Performs the necessary steps to run the simulation
+
 to setup
   clear-all
   reset-ticks
@@ -66,7 +71,6 @@ to setup
   set resource-path word "resources/" word scenario "/"
 
   if write-output? [
-    set output-steps 10
     set output-path word "output/" word scenario word "/" word format-date-time date-and-time ".csv"
 
     set output-ticks []
@@ -87,6 +91,9 @@ to setup
   ]
 end
 
+; @method set-environment
+; @description Sets up the environment and defines the fields
+
 to set-environment
   gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
 
@@ -96,6 +103,9 @@ to set-environment
 
   import-pcolors word resource-path "floorplan.png"
 end
+
+; @method create-circle
+; @description Creates a circle around a ped to display the contact radius on the interface
 
 to create-circle
   hatch-circles 1 [
@@ -109,6 +119,9 @@ to create-circle
     ]
   ]
 end
+
+; @method set-nodes
+; @description Loads the nodes and their links from external sources and adds them to the world
 
 to set-nodes
   if not file-exists? word resource-path "nodes.json" [
@@ -179,6 +192,10 @@ to set-nodes
   file-close
 end
 
+; @method format-date-time
+; @description Formats a given datetime string so that it can be used in a file name
+; @param string datetime
+
 to-report format-date-time [datetime]
   set datetime replace-item 2 datetime "-"
   set datetime replace-item 5 datetime "-"
@@ -189,6 +206,10 @@ to-report format-date-time [datetime]
   report datetime
 end
 
+; @method string-to-list
+; @description Transforms a string to a list
+; @param string s
+
 to-report string-to-list [s]
   report ifelse-value not empty? s [
     []
@@ -197,8 +218,11 @@ to-report string-to-list [s]
   ]
 end
 
+; @method set-agents
+; @description Sets the agents/peds of the model
+
 to set-agents
-  repeat number-of-people [create-ped 0 0 0]
+  repeat number-of-people [create-ped]
 
   ask n-of round (familiarity-rate * number-of-people) peds [
     set is-familiar? true
@@ -220,22 +244,25 @@ to set-agents
   ]
 end
 
-to create-ped [x y k]
+; @method create-ped
+; @description Creates a new ped and sets its attributes
+
+to create-ped
+  let x 0
+  let y 0
   let tmp-first-node nobody
 
-  if k = 0 [
-    ask one-of nodes with [is-origin? = true] [
-      set x pxcor
-      set y pycor
-      set tmp-first-node self
-    ]
+  ask one-of nodes with [is-origin? = true] [
+    set x pxcor
+    set y pycor
+    set tmp-first-node self
   ]
 
   create-peds 1 [
     set shape "person"
     set color cyan
-    set xcor x + random-normal 0 .2
-    set ycor y + random-normal 0 .2
+    set xcor x + random-normal 0 0.2
+    set ycor y + random-normal 0 0.2
     set is-familiar? false
     set is-visiting? true ;temporarily
     set has-visited? false
@@ -248,6 +275,12 @@ to create-ped [x y k]
     set label-color black
   ]
 end
+
+; @method link-nodes
+; @description Creates a directed or undirected link between two nodes
+; @param int id1
+; @param int id2
+; @param bool is-two-way?
 
 to link-nodes [id1 id2 is-two-way?]
   ask node id1 [
@@ -267,6 +300,8 @@ to link-nodes [id1 id2 is-two-way?]
   ]
 end
 
+;Todo: What to do with this..?
+
 to plot!
   set-current-plot "Speed"
   set-current-plot-pen "Mean"
@@ -280,6 +315,12 @@ to plot!
   plotxy time flow-cum / time / world-height
 end
 
+; @method init-paths
+; @description Initializes the ped`s routing from one node to another
+; @param ped k
+; @param node node1
+; @param node node2
+
 to init-paths [k node1 node2]
   set origin node1
   set destination node2
@@ -290,6 +331,11 @@ to init-paths [k node1 node2]
   set current-path []
   set-paths self (list (list node1))
 end
+
+; @method update-path
+; @description Updates the current path based on the ped`s familiarity and public display sensory (if applicable)
+; @param ped k
+; @param node n
 
 to update-path [k n]
   let current-node-has-display? false
@@ -330,7 +376,7 @@ to update-path [k n]
         face cur-node
 
         if show-areas-of-awareness? [
-          ask patches in-cone area-of-awareness angle-of-awareness [
+          ask patches in-cone area-of-awareness angle-of-awareness with [not (pcolor = black)] [
             set pcolor yellow
           ]
         ]
@@ -365,13 +411,11 @@ to update-path [k n]
   set next-node item 1 current-path
 end
 
-;Todo: refactor
-to recalculate-current-path [k n]
-  set paths map [i -> but-first i] (filter [i -> item 1 i = n] paths)
-  update-path self n
-end
+; @method set-paths
+; @description Sets the paths based on given starting nodes
+; @param ped k
+; @param list origin-nodes
 
-;Todo: refactor
 to set-paths [k origin-nodes]
   let new-origin-nodes origin-nodes
   let destination-node destination
@@ -402,6 +446,9 @@ to set-paths [k origin-nodes]
     set-paths self new-origin-nodes
   ]
 end
+
+; @method trace-contacts
+; @description Traces the contacts that occur between the peds
 
 to trace-contacts
   ask peds [
@@ -485,7 +532,10 @@ to trace-contacts
   ]
 end
 
-to move
+; @method simulate
+; @description Runs the simulation, which includes the movement of the agents, the event handling, output writing, etc.
+
+to simulate
   set time precision (time + dt) 5 tick-advance 1
   trace-contacts
 
@@ -541,7 +591,8 @@ to move
         let pos (position next-node current-path) + 1
 
         ifelse not is-familiar? [
-          recalculate-current-path self next-node
+          set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
+          update-path self next-node
         ] [
           set next-node item pos current-path
         ]
@@ -594,10 +645,10 @@ to move
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-422
-50
-1127
-756
+386
+10
+1091
+716
 -1
 -1
 17.0
@@ -621,25 +672,25 @@ Ticks
 30.0
 
 SLIDER
-90
-109
-193
-142
+8
+121
+183
+154
 number-of-people
 number-of-people
 0
 50
-2.0
+3.0
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-30
-126
-85
-160
+187
+72
+242
+118
 NIL
 Setup
 NIL
@@ -653,12 +704,12 @@ NIL
 1
 
 BUTTON
-30
-163
-85
-196
+247
+72
+302
+118
 NIL
-Move
+Simulate
 T
 1
 T
@@ -670,10 +721,10 @@ NIL
 1
 
 PLOT
-46
-460
-396
-580
+1112
+559
+1467
+679
 Mean flow
 Time
 Flow
@@ -689,10 +740,10 @@ PENS
 "Temporal" 1.0 0 -11881837 true "" ""
 
 PLOT
-46
-337
-396
-457
+1111
+437
+1467
+557
 Speed
 Time
 Speed
@@ -708,10 +759,10 @@ PENS
 "Stddev" 1.0 0 -11881837 true "" ""
 
 SLIDER
-198
-108
-290
-141
+190
+657
+365
+690
 V0
 V0
 0
@@ -723,10 +774,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-59
-61
-117
-106
+1111
+388
+1176
+433
 Time
 time
 17
@@ -734,10 +785,10 @@ time
 11
 
 MONITOR
-182
-61
-252
-106
+1242
+388
+1315
+433
 Mean speed
 mean [sqrt(speedx ^ 2 + speedy ^ 2)] of peds
 5
@@ -745,10 +796,10 @@ mean [sqrt(speedx ^ 2 + speedy ^ 2)] of peds
 11
 
 MONITOR
-255
-61
-332
-106
+1318
+388
+1398
+433
 Speed stddev
 stddev-speed / ticks
 5
@@ -756,10 +807,10 @@ stddev-speed / ticks
 11
 
 MONITOR
-120
-61
-178
-106
+1179
+388
+1239
+433
 Density
 number-of-people / world-width / world-height
 5
@@ -767,10 +818,10 @@ number-of-people / world-width / world-height
 11
 
 MONITOR
-335
-61
-396
-106
+1401
+388
+1467
+433
 Flow
 flow-cum / time / world-height
 5
@@ -778,10 +829,10 @@ flow-cum / time / world-height
 11
 
 PLOT
-45
-585
-227
-705
+1112
+681
+1299
+801
 Fundamental diagram
 Density
 Flow
@@ -796,10 +847,10 @@ PENS
 "default" 1.0 0 -11053225 true "" ""
 
 PLOT
-238
-586
-398
-706
+1302
+681
+1467
+801
 Speed stddev
 Density
 Stddev
@@ -814,10 +865,10 @@ PENS
 "default" 1.0 0 -11053225 true "" ""
 
 SLIDER
-91
-145
-194
-178
+12
+657
+187
+690
 dt
 dt
 0
@@ -829,10 +880,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-294
-182
-386
-215
+190
+693
+365
+726
 D
 D
 0.1
@@ -844,12 +895,12 @@ NIL
 HORIZONTAL
 
 BUTTON
-30
-199
-85
-232
+308
+72
+363
+119
 NIL
-Move
+Simulate
 NIL
 1
 T
@@ -861,10 +912,10 @@ NIL
 1
 
 SLIDER
-294
-145
-386
-178
+13
+693
+187
+726
 A
 A
 0
@@ -876,10 +927,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-199
-144
-291
-177
+13
+729
+188
+762
 Tr
 Tr
 .1
@@ -891,10 +942,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-293
-109
-398
-142
+187
+121
+363
+154
 familiarity-rate
 familiarity-rate
 0
@@ -906,10 +957,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-212
-220
-329
-253
+12
+551
+186
+584
 show-logs?
 show-logs?
 1
@@ -917,40 +968,25 @@ show-logs?
 -1000
 
 SLIDER
-1133
-94
-1305
-127
+10
+348
+182
+381
 contact-radius
 contact-radius
 0
 10
-3.0
-0.2
+3.6
+0.1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-1134
-135
-1306
-168
-contact-radius
-contact-radius
-1
-10
-3.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-1134
-182
-1306
-215
+185
+348
+357
+381
 critical-period
 critical-period
 1
@@ -962,10 +998,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-1135
-227
-1307
-260
+10
+384
+182
+417
 contact-tolerance
 contact-tolerance
 0
@@ -977,10 +1013,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-1324
-98
-1459
-143
+1110
+11
+1285
+56
 Number of contacts
 overall-contacts / 2
 0
@@ -988,10 +1024,10 @@ overall-contacts / 2
 11
 
 MONITOR
-1478
-99
-1714
-144
+1290
+11
+1466
+56
 Avg. number of contacts per person
 overall-contacts / 2 / number-of-people
 3
@@ -999,21 +1035,21 @@ overall-contacts / 2 / number-of-people
 11
 
 MONITOR
-1326
-154
-1507
-199
-Number of unique contacts
+1110
+59
+1286
+104
+Unique contacts
 unique-contacts / 2
 0
 1
 11
 
 MONITOR
-1523
-154
-1636
-199
+1290
+59
+1466
+104
 Critical contacts
 critical-contacts / 2
 0
@@ -1021,32 +1057,32 @@ critical-contacts / 2
 11
 
 MONITOR
-1327
-212
-1497
-257
-Average contact duration
+1110
+107
+1287
+152
+Avg. contact duration
 overall-contact-time / overall-contacts
 3
 1
 11
 
 MONITOR
-1511
-212
-1680
-257
-Average contact distance
+1291
+107
+1466
+152
+Avg. contact distance
 contact-distance / contact-distance-values
 3
 1
 11
 
 PLOT
-1138
-273
-1877
-757
+1111
+158
+1467
+371
 Contacts
 ticks
 contacts
@@ -1064,10 +1100,10 @@ PENS
 "unique-contacts" 1.0 0 -955883 true "" "plot (unique-contacts / 2)"
 
 SWITCH
-1324
-51
-1466
-84
+185
+385
+357
+418
 show-circles?
 show-circles?
 0
@@ -1075,10 +1111,10 @@ show-circles?
 -1000
 
 SWITCH
-1490
-51
-1628
-84
+12
+587
+187
+620
 show-labels?
 show-labels?
 0
@@ -1086,10 +1122,10 @@ show-labels?
 -1000
 
 SLIDER
-1133
-50
-1305
-83
+186
+245
+358
+278
 area-of-awareness
 area-of-awareness
 0
@@ -1101,10 +1137,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-88
-220
-206
-253
+11
+514
+185
+547
 show-paths?
 show-paths?
 1
@@ -1112,10 +1148,10 @@ show-paths?
 -1000
 
 SWITCH
-88
-260
-259
-293
+189
+514
+365
+547
 show-walking-paths?
 show-walking-paths?
 1
@@ -1123,10 +1159,10 @@ show-walking-paths?
 -1000
 
 SWITCH
-263
-260
-405
-293
+189
+552
+365
+585
 show-contacts?
 show-contacts?
 1
@@ -1134,20 +1170,20 @@ show-contacts?
 -1000
 
 CHOOSER
-59
-10
-197
-55
+8
+72
+184
+117
 scenario
 scenario
-"hospital" "airport"
-0
+"hospital" "airport" "testing-environment-1"
+2
 
 SWITCH
-200
-11
-331
-44
+10
+447
+184
+480
 write-output?
 write-output?
 1
@@ -1155,10 +1191,10 @@ write-output?
 -1000
 
 INPUTBOX
-334
-10
-415
-70
+8
+158
+184
+218
 stop-at-ticks
 100000.0
 1
@@ -1166,10 +1202,10 @@ stop-at-ticks
 Number
 
 SLIDER
-1175
 8
-1347
-41
+245
+183
+278
 angle-of-awareness
 angle-of-awareness
 0
@@ -1181,15 +1217,100 @@ NIL
 HORIZONTAL
 
 SWITCH
-1374
-11
-1580
-44
+8
+281
+182
+314
 show-areas-of-awareness?
 show-areas-of-awareness?
 1
 1
 -1000
+
+SLIDER
+187
+447
+359
+480
+output-steps
+output-steps
+10
+500
+10.0
+10
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+9
+10
+370
+44
+Optimizing Social Distance Keeping in Indoor Environments via a Public Display Navigation Support System
+14
+0.0
+1
+
+TEXTBOX
+9
+55
+159
+73
+Main setup
+11
+0.0
+1
+
+TEXTBOX
+12
+431
+162
+449
+Output generation
+11
+0.0
+1
+
+TEXTBOX
+10
+228
+160
+246
+Public Display settings
+11
+0.0
+1
+
+TEXTBOX
+11
+332
+161
+350
+Contact settings
+11
+0.0
+1
+
+TEXTBOX
+12
+496
+162
+514
+Additional options
+11
+0.0
+1
+
+TEXTBOX
+15
+640
+310
+668
+Speed and Social Force (maybe just remove from interface)
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
