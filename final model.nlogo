@@ -7,7 +7,7 @@
 ;Todo:
 ; - Design interface
 ; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)
-; - Fix bugs (e.g. contact stamps)
+; - Fix bugs (e.g. stop feature(!), contact stamps)
 
 extensions [csv gis]
 
@@ -38,6 +38,7 @@ peds-own [
   is-familiar?
   is-visiting?
   has-visited?
+  is-waiting?
   origin
   destination
   has-reached-first-node?
@@ -57,6 +58,7 @@ nodes-own [
   is-origin?
   is-destination?
   has-public-display?
+  peds-waiting-here
 ]
 
 breed [circles circle]
@@ -137,13 +139,10 @@ to set-nodes
   gis:create-turtles-from-points-manual json-nodes nodes [["ISORIGIN" "is-origin?"] ["ISDESTINATION" "is-destination?"] ["HASPUBLICDISPLAY" "has-public-display?"]] [
     set shape "circle"
     set color green
+    set label-color black
 
     if not show-paths? [
       set hidden? true
-    ]
-
-    if show-labels? [
-      set label count nodes - 1
     ]
   ]
 
@@ -171,6 +170,10 @@ to set-nodes
       set hidden? false
     ] [
       set has-public-display? false
+    ]
+
+    if show-labels? and use-stop-feature? [
+      set label peds-waiting-here
     ]
   ]
 
@@ -266,6 +269,7 @@ to create-ped
     set is-familiar? false
     set is-visiting? true ;temporarily
     set has-visited? false
+    set is-waiting? false
     set origin tmp-first-node
     set destination one-of nodes with [is-destination? = true]
 
@@ -339,12 +343,14 @@ end
 
 to update-path [k n]
   let current-node-has-display? false
+  let number-of-peds-waiting 0
 
   ask n [
     set current-node-has-display? has-public-display?
+    set number-of-peds-waiting peds-waiting-here
   ]
 
-  ifelse not is-familiar? and current-node-has-display? [
+  ifelse not use-static-signage? and not is-familiar? and current-node-has-display? [
     let available-paths paths
 
     let adjacent-nodes []
@@ -369,9 +375,12 @@ to update-path [k n]
     ]
 
     let detected-people -1
+    let tmp-detected-people 0
     let least-crowded-adjacent-node nobody
 
     foreach adjacent-nodes [cur-node ->
+      set tmp-detected-people 0
+
       ask n [
         face cur-node
 
@@ -381,9 +390,39 @@ to update-path [k n]
           ]
         ]
 
-        if detected-people = -1 or (detected-people > 0 and count peds in-cone area-of-awareness angle-of-awareness with [not (self = myself)] < detected-people) [
-          set detected-people count peds in-cone area-of-awareness 70 with [not (self = myself)]
+        set tmp-detected-people count peds in-cone area-of-awareness angle-of-awareness with [not (self = myself)]
+
+        if detected-people = -1 or (detected-people > 0 and tmp-detected-people < detected-people) [
+          set detected-people tmp-detected-people
           set least-crowded-adjacent-node cur-node
+        ]
+      ]
+    ]
+
+    if use-stop-feature? [
+      ifelse detected-people > number-of-peds-waiting [
+        set is-waiting? true
+        set color orange
+
+        ask n [
+          set peds-waiting-here peds-waiting-here + 1
+
+          if show-labels? [
+            set label peds-waiting-here
+          ]
+        ]
+      ] [
+        if is-waiting? [
+          set is-waiting? false
+          set color cyan
+
+          ask n [
+            set peds-waiting-here peds-waiting-here - 1
+
+            if show-labels? [
+              set label peds-waiting-here
+            ]
+          ]
         ]
       ]
     ]
@@ -408,7 +447,9 @@ to update-path [k n]
     set current-path first paths
   ]
 
-  set next-node item 1 current-path
+  if not is-waiting? [
+    set next-node item 1 current-path
+  ]
 end
 
 ; @method set-paths
@@ -539,7 +580,7 @@ to simulate
   set time precision (time + dt) 5 tick-advance 1
   trace-contacts
 
-  ask peds [
+  ask peds with [not (is-waiting?)] [
     let hd towards next-node
     let h hd
     let repx 0
@@ -601,6 +642,10 @@ to simulate
 
     set xcor xcor + speedx * dt
     set ycor ycor + speedy * dt
+  ]
+
+  ask peds with [is-waiting?] [
+    update-path self last-node
   ]
 
   if write-output? and ticks mod output-steps = 0 [
@@ -680,7 +725,7 @@ number-of-people
 number-of-people
 0
 50
-3.0
+8.0
 1
 1
 NIL
@@ -759,10 +804,10 @@ PENS
 "Stddev" 1.0 0 -11881837 true "" ""
 
 SLIDER
-190
-657
-365
-690
+189
+687
+364
+720
 V0
 V0
 0
@@ -865,10 +910,10 @@ PENS
 "default" 1.0 0 -11053225 true "" ""
 
 SLIDER
-12
-657
-187
-690
+11
+687
+186
+720
 dt
 dt
 0
@@ -880,10 +925,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-190
-693
-365
-726
+189
+723
+364
+756
 D
 D
 0.1
@@ -912,10 +957,10 @@ NIL
 1
 
 SLIDER
-13
-693
-187
-726
+12
+723
+186
+756
 A
 A
 0
@@ -927,10 +972,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-13
-729
-188
-762
+12
+759
+187
+792
 Tr
 Tr
 .1
@@ -957,10 +1002,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-12
-551
-186
-584
+11
+581
+185
+614
 show-logs?
 show-logs?
 1
@@ -968,10 +1013,10 @@ show-logs?
 -1000
 
 SLIDER
-10
-348
-182
-381
+9
+378
+181
+411
 contact-radius
 contact-radius
 0
@@ -983,10 +1028,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-185
-348
-357
-381
+184
+378
+356
+411
 critical-period
 critical-period
 1
@@ -998,10 +1043,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-10
-384
-182
-417
+9
+414
+181
+447
 contact-tolerance
 contact-tolerance
 0
@@ -1100,10 +1145,10 @@ PENS
 "unique-contacts" 1.0 0 -955883 true "" "plot (unique-contacts / 2)"
 
 SWITCH
-185
-385
-357
-418
+184
+415
+356
+448
 show-circles?
 show-circles?
 0
@@ -1111,10 +1156,10 @@ show-circles?
 -1000
 
 SWITCH
-12
-587
-187
-620
+11
+617
+186
+650
 show-labels?
 show-labels?
 0
@@ -1137,10 +1182,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-11
-514
-185
-547
+10
+544
+184
+577
 show-paths?
 show-paths?
 1
@@ -1148,10 +1193,10 @@ show-paths?
 -1000
 
 SWITCH
-189
-514
-365
-547
+188
+544
+364
+577
 show-walking-paths?
 show-walking-paths?
 1
@@ -1159,10 +1204,10 @@ show-walking-paths?
 -1000
 
 SWITCH
-189
-552
-365
-585
+188
+582
+364
+615
 show-contacts?
 show-contacts?
 1
@@ -1180,10 +1225,10 @@ scenario
 2
 
 SWITCH
-10
-447
-184
-480
+9
+477
+183
+510
 write-output?
 write-output?
 1
@@ -1217,9 +1262,9 @@ NIL
 HORIZONTAL
 
 SWITCH
-8
+186
 281
-182
+358
 314
 show-areas-of-awareness?
 show-areas-of-awareness?
@@ -1228,10 +1273,10 @@ show-areas-of-awareness?
 -1000
 
 SLIDER
-187
-447
-359
-480
+186
+477
+358
+510
 output-steps
 output-steps
 10
@@ -1263,10 +1308,10 @@ Main setup
 1
 
 TEXTBOX
-12
-431
-162
-449
+11
+461
+161
+479
 Output generation
 11
 0.0
@@ -1283,34 +1328,56 @@ Public Display settings
 1
 
 TEXTBOX
-11
-332
-161
-350
+10
+362
+160
+380
 Contact settings
 11
 0.0
 1
 
 TEXTBOX
-12
-496
-162
-514
+11
+526
+161
+544
 Additional options
 11
 0.0
 1
 
 TEXTBOX
-15
-640
-310
-668
+14
+670
+309
+698
 Speed and Social Force (maybe just remove from interface)
 11
 0.0
 1
+
+SWITCH
+9
+281
+182
+314
+use-stop-feature?
+use-stop-feature?
+1
+1
+-1000
+
+SWITCH
+9
+317
+182
+350
+use-static-signage?
+use-static-signage?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
