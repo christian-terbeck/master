@@ -390,7 +390,7 @@ to update-path [k n]
           ]
         ]
 
-        set tmp-detected-people count peds in-cone area-of-awareness angle-of-awareness with [not (self = myself)]
+        set tmp-detected-people count peds in-cone area-of-awareness angle-of-awareness with [not (self = k)]
 
         if detected-people = -1 or (detected-people > 0 and tmp-detected-people < detected-people) [
           set detected-people tmp-detected-people
@@ -400,15 +400,17 @@ to update-path [k n]
     ]
 
     if use-stop-feature? [
-      ifelse detected-people > number-of-peds-waiting [
-        set is-waiting? true
-        set color orange
+      ifelse (not is-waiting? and detected-people > number-of-peds-waiting) or (is-waiting? and detected-people > number-of-peds-waiting - 1) [
+        if not is-waiting? [
+          set is-waiting? true
+          set color orange
 
-        ask n [
-          set peds-waiting-here peds-waiting-here + 1
+          ask n [
+            set peds-waiting-here peds-waiting-here + 1
 
-          if show-labels? [
-            set label peds-waiting-here
+            if show-labels? [
+              set label peds-waiting-here
+            ]
           ]
         ]
       ] [
@@ -725,7 +727,7 @@ number-of-people
 number-of-people
 0
 50
-8.0
+2.0
 1
 1
 NIL
@@ -1364,7 +1366,7 @@ SWITCH
 314
 use-stop-feature?
 use-stop-feature?
-1
+0
 1
 -1000
 
