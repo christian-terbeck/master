@@ -5,9 +5,11 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
-; - Design interface
+; - Fix and finish testing environments 1 & 2.
+; - highlight starting/origin nodes
+; - Implement level switching?
 ; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)
-; - Fix bugs (e.g. stop feature(!), contact stamps)
+; - Fix bugs (e.g. contact stamps)
 
 extensions [csv gis]
 
@@ -98,10 +100,36 @@ end
 ; @description Sets up the environment and defines the fields
 
 to set-environment
+  let dimension 20
+  let field-size 10
+
+  if scenario = "hospital" [
+    set dimension 40
+    set field-size 10
+  ]
+
+  if scenario = "airport" [
+    set dimension 50
+    set field-size 8
+  ]
+
+  if scenario = "testing-environment-1" [
+    set dimension 20
+    set field-size 20
+  ]
+
+  if scenario = "testing-environment-2" [
+    set dimension 40
+    set field-size 10
+  ]
+
+  resize-world (dimension * -1) dimension (dimension * -1) dimension
+  set-patch-size field-size
+
   gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
 
   if not file-exists? word resource-path "floorplan.jpg" and not file-exists? word resource-path "floorplan.png" [
-    error word "The required file " word resource-path "floorplan.jpg is missing."
+    error word "The required file " word resource-path "floorplan.jpg/floorplan.png is missing."
   ]
 
   ifelse file-exists? word resource-path "floorplan.jpg" [
@@ -708,13 +736,13 @@ to simulate
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-386
+380
 10
-1091
-716
+1198
+829
 -1
 -1
-17.0
+10.0
 1
 10
 1
@@ -724,10 +752,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--20
-20
--20
-20
+-40
+40
+-40
+40
 0
 0
 1
@@ -784,10 +812,10 @@ NIL
 1
 
 PLOT
-1112
-559
-1467
-679
+1225
+558
+1580
+678
 Mean flow
 Time
 Flow
@@ -803,10 +831,10 @@ PENS
 "Temporal" 1.0 0 -11881837 true "" ""
 
 PLOT
-1111
-437
-1467
-557
+1224
+436
+1580
+556
 Speed
 Time
 Speed
@@ -837,10 +865,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-1111
-388
-1176
-433
+1223
+387
+1288
+432
 Time
 time
 17
@@ -848,10 +876,10 @@ time
 11
 
 MONITOR
-1242
-388
-1315
-433
+1355
+387
+1428
+432
 Mean speed
 mean [sqrt(speedx ^ 2 + speedy ^ 2)] of peds
 5
@@ -859,10 +887,10 @@ mean [sqrt(speedx ^ 2 + speedy ^ 2)] of peds
 11
 
 MONITOR
-1318
-388
-1398
-433
+1431
+387
+1511
+432
 Speed stddev
 stddev-speed / ticks
 5
@@ -870,10 +898,10 @@ stddev-speed / ticks
 11
 
 MONITOR
-1179
-388
-1239
-433
+1292
+387
+1352
+432
 Density
 number-of-people / world-width / world-height
 5
@@ -881,10 +909,10 @@ number-of-people / world-width / world-height
 11
 
 MONITOR
-1401
-388
-1467
-433
+1514
+387
+1580
+432
 Flow
 flow-cum / time / world-height
 5
@@ -892,10 +920,10 @@ flow-cum / time / world-height
 11
 
 PLOT
-1112
-681
-1299
-801
+1225
+680
+1412
+800
 Fundamental diagram
 Density
 Flow
@@ -910,10 +938,10 @@ PENS
 "default" 1.0 0 -11053225 true "" ""
 
 PLOT
-1302
-681
-1467
-801
+1415
+680
+1580
+800
 Speed stddev
 Density
 Stddev
@@ -1076,10 +1104,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-1110
-11
-1285
-56
+1223
+10
+1398
+55
 Number of contacts
 overall-contacts / 2
 0
@@ -1087,10 +1115,10 @@ overall-contacts / 2
 11
 
 MONITOR
-1290
-11
-1466
-56
+1403
+10
+1579
+55
 Avg. number of contacts per person
 overall-contacts / 2 / number-of-people
 3
@@ -1098,10 +1126,10 @@ overall-contacts / 2 / number-of-people
 11
 
 MONITOR
-1110
-59
-1286
-104
+1223
+58
+1399
+103
 Unique contacts
 unique-contacts / 2
 0
@@ -1109,10 +1137,10 @@ unique-contacts / 2
 11
 
 MONITOR
-1290
-59
-1466
-104
+1403
+58
+1579
+103
 Critical contacts
 critical-contacts / 2
 0
@@ -1120,10 +1148,10 @@ critical-contacts / 2
 11
 
 MONITOR
-1110
-107
-1287
-152
+1223
+106
+1400
+151
 Avg. contact duration
 overall-contact-time / overall-contacts
 3
@@ -1131,10 +1159,10 @@ overall-contact-time / overall-contacts
 11
 
 MONITOR
-1291
-107
-1466
-152
+1404
+106
+1579
+151
 Avg. contact distance
 contact-distance / contact-distance-values
 3
@@ -1142,10 +1170,10 @@ contact-distance / contact-distance-values
 11
 
 PLOT
-1111
-158
-1467
-371
+1224
+157
+1580
+370
 Contacts
 ticks
 contacts
@@ -1206,7 +1234,7 @@ SWITCH
 577
 show-paths?
 show-paths?
-1
+0
 1
 -1000
 
@@ -1239,8 +1267,8 @@ CHOOSER
 117
 scenario
 scenario
-"hospital" "airport" "testing-environment-1"
-0
+"hospital" "airport" "testing-environment-1" "testing-environment-2"
+3
 
 SWITCH
 9
