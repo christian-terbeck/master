@@ -39,6 +39,7 @@ peds-own [
   is-visiting?
   has-visited?
   is-waiting?
+  waiting-time
   origin
   destination
   has-reached-first-node?
@@ -400,7 +401,7 @@ to update-path [k n]
     ]
 
     if use-stop-feature? [
-      ifelse (not is-waiting? and detected-people > number-of-peds-waiting) or (is-waiting? and detected-people > number-of-peds-waiting - 1) [
+      ifelse (not is-waiting? and detected-people > number-of-peds-waiting) or (is-waiting? and waiting-time < max-waiting-time and detected-people > number-of-peds-waiting - 1) [
         if not is-waiting? [
           set is-waiting? true
           set color orange
@@ -413,9 +414,12 @@ to update-path [k n]
             ]
           ]
         ]
+
+        set waiting-time waiting-time + 1
       ] [
         if is-waiting? [
           set is-waiting? false
+          set waiting-time 0
           set color cyan
 
           ask n [
@@ -1264,10 +1268,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-186
-281
-358
-314
+9
+317
+181
+350
 show-areas-of-awareness?
 show-areas-of-awareness?
 1
@@ -1371,15 +1375,30 @@ use-stop-feature?
 -1000
 
 SWITCH
-9
+186
 317
-182
+359
 350
 use-static-signage?
 use-static-signage?
 1
 1
 -1000
+
+SLIDER
+186
+281
+358
+314
+max-waiting-time
+max-waiting-time
+0
+50
+50.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
