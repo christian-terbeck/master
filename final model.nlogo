@@ -100,11 +100,23 @@ end
 to set-environment
   gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
 
-  if show-logs? [
-    print word "Loading floor plan: " word resource-path "floorplan.png"
+  if not file-exists? word resource-path "floorplan.jpg" and not file-exists? word resource-path "floorplan.png" [
+    error word "The required file " word resource-path "floorplan.jpg is missing."
   ]
 
-  import-pcolors word resource-path "floorplan.png"
+  ifelse file-exists? word resource-path "floorplan.jpg" [
+    if show-logs? [
+      print word "Loading floor plan: " word resource-path "floorplan.jpg"
+    ]
+
+    import-pcolors word resource-path "floorplan.jpg"
+  ] [
+    if show-logs? [
+      print word "Loading floor plan: " word resource-path "floorplan.png"
+    ]
+
+    import-pcolors word resource-path "floorplan.png"
+  ]
 end
 
 ; @method create-circle
@@ -1228,7 +1240,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1"
-2
+0
 
 SWITCH
 9
