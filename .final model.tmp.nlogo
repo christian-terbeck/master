@@ -215,11 +215,11 @@ to set-nodes
       set has-public-display? false
     ]
 
-    if show-labels? [
+    if show-labels?  [
       ifelse use-stop-feature? [
         set label peds-waiting-here
       ] [
-        set label [who] of self
+        set label count nodes - 1
       ]
     ]
   ]
