@@ -21,6 +21,7 @@ globals [
   output-critical-contacts
   output-unique-contacts
   time
+  level-switching-duration
   mean-speed
   mean-visiting-time
   stddev-speed
@@ -42,6 +43,8 @@ peds-own [
   has-visited?
   is-waiting?
   waiting-time
+  current-level
+  level-switching-time
   origin
   destination
   has-reached-first-node?
@@ -62,6 +65,7 @@ nodes-own [
   is-destination?
   has-public-display?
   peds-waiting-here
+  level
 ]
 
 breed [circles circle]
@@ -118,13 +122,15 @@ to set-environment
     set field-size 20
   ]
 
-  if scenario = "testing-environment-2" [
+  if scenario = "testing-environment-2" or scenario = "testing-environment-3" [
     set dimension 40
     set field-size 10
   ]
 
   resize-world (dimension * -1) dimension (dimension * -1) dimension
   set-patch-size field-size
+
+  set level-switching-duration 10
 
   gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
 
@@ -323,6 +329,7 @@ to create-ped
     set is-waiting? false
     set origin tmp-first-node
     set destination one-of nodes with [is-destination? = true]
+    set current-level [level] of tmp-first-node
 
     set had-contact-with []
     set active-contacts []
@@ -341,12 +348,20 @@ to link-nodes [id1 id2 is-two-way?]
   ask node id1 [
     ifelse is-two-way? [
       create-link-with node id2 [
+        if [level] of node id1 != [level] of node id2 [
+          set color green
+        ]
+
         if not show-paths? [
           hide-link
         ]
       ]
     ] [
       create-link-to node id2 [
+        if [level] of node id1 != [level] of node id2 [
+          set color green
+        ]
+
         if not show-paths? [
           hide-link
         ]
@@ -548,6 +563,30 @@ to set-paths [k origin-nodes]
   ]
 end
 
+; @method set-paths
+; @description Hides the ped and its related agents
+; @param ped k
+
+to hide-me [k]
+  hide-turtle
+
+  ask in-link-neighbors [
+    hide-turtle
+  ]
+end
+
+; @method show-me
+; @description Shows the ped and its related agents
+; @param ped k
+
+to show-me [k]
+  show-turtle
+
+  ask in-link-neighbors [
+    show-turtle
+  ]
+end
+
 ; @method trace-contacts
 ; @description Traces the contacts that occur between the peds
 
@@ -691,11 +730,27 @@ to simulate
       ] [
         let pos (position next-node current-path) + 1
 
-        ifelse not is-familiar? [
-          set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
-          update-path self next-node
+        ifelse [level] of item pos current-path != current-level [
+          ifelse level-switching-time < level-switching-duration [
+            if not hidden? [
+              hide-me self
+            ]
+
+            set level-switching-time level-switching-time + 1
+          ] [
+            set next-node item pos current-path
+            move-to item pos current-path
+            set current-level [level] of item pos current-path
+            set level-switching-time 0
+            show-me self
+          ]
         ] [
-          set next-node item pos current-path
+          ifelse not is-familiar? [
+            set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
+            update-path self next-node
+          ] [
+            set next-node item pos current-path
+          ]
         ]
       ]
     ]
@@ -785,7 +840,7 @@ number-of-people
 number-of-people
 0
 50
-2.0
+3.0
 1
 1
 NIL
@@ -1281,8 +1336,8 @@ CHOOSER
 117
 scenario
 scenario
-"hospital" "airport" "testing-environment-1" "testing-environment-2"
-3
+"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3"
+4
 
 SWITCH
 9
@@ -1301,7 +1356,7 @@ INPUTBOX
 184
 218
 stop-at-ticks
-100000.0
+1000000.0
 1
 0
 Number
