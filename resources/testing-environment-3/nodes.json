@@ -34,7 +34,7 @@
                 "coordinates": [-5, 37],
             },
             "properties": {
-                "isOrigin": false,
+                "isOrigin": true,
                 "isDestination": false,
                 "hasPublicDisplay": false,
                 "level": 1,
@@ -99,7 +99,7 @@
                 "coordinates": [-36, 5],
             },
             "properties": {
-                "isOrigin": false,
+                "isOrigin": true,
                 "isDestination": false,
                 "hasPublicDisplay": false,
                 "level": 1,
@@ -125,7 +125,7 @@
                 "coordinates": [-5, 5],
             },
             "properties": {
-                "isOrigin": false,
+                "isOrigin": true,
                 "isDestination": false,
                 "hasPublicDisplay": false,
                 "level": 1,
@@ -191,7 +191,7 @@
             },
             "properties": {
                 "isOrigin": false,
-                "isDestination": false,
+                "isDestination": true,
                 "hasPublicDisplay": false,
                 "level": 2,
             }
@@ -425,7 +425,7 @@
             },
             "properties": {
                 "isOrigin": false,
-                "isDestination": false,
+                "isDestination": true,
                 "hasPublicDisplay": false,
                 "level": 3,
             }

@@ -5,11 +5,12 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
+; - Sort paths by shortest distance (ASC)
 ; - Fix and finish testing environments 1 & 2.
 ; - highlight starting/origin nodes
-; - Implement level switching?
 ; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)
 ; - Fix bugs (e.g. contact stamps)
+; - Write model info! (second tab)
 
 extensions [csv gis]
 
@@ -370,21 +371,6 @@ to link-nodes [id1 id2 is-two-way?]
   ]
 end
 
-;Todo: What to do with this..?
-
-to plot!
-  set-current-plot "Speed"
-  set-current-plot-pen "Mean"
-  plotxy time mean-speed / ticks
-  set-current-plot-pen "Stddev"
-  plotxy time stddev-speed / ticks
-  set-current-plot "Mean flow" set-plot-y-range 0 2
-  set-current-plot-pen "Spatial"
-  plotxy time (mean-speed / ticks * number-of-people / world-width / world-height)
-  set-current-plot-pen "Temporal"
-  plotxy time flow-cum / time / world-height
-end
-
 ; @method init-paths
 ; @description Initializes the ped`s routing from one node to another
 ; @param ped k
@@ -689,6 +675,8 @@ to simulate
       set h atan speedx speedy
     ]
 
+    ;Todo: move social force to external report function
+
     ask peds in-cone (D) 120 with [not (self = myself)] [
       ifelse distance destination < D or distance next-node < D [
         set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
@@ -738,9 +726,10 @@ to simulate
 
             set level-switching-time level-switching-time + 1
           ] [
+            set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
             set next-node item pos current-path
-            move-to item pos current-path
-            set current-level [level] of item pos current-path
+            move-to next-node
+            set current-level [level] of next-node
             set level-switching-time 0
             show-me self
           ]
@@ -800,7 +789,6 @@ to simulate
     set flow-cum flow-cum + 1
   ]
 
-  plot!
   update-plots
 end
 @#$#@#$#@
@@ -840,7 +828,7 @@ number-of-people
 number-of-people
 0
 50
-3.0
+4.0
 1
 1
 NIL
@@ -880,49 +868,11 @@ NIL
 NIL
 1
 
-PLOT
-1225
-558
-1580
-678
-Mean flow
-Time
-Flow
-0.0
-0.0
-0.0
-0.0
-true
-true
-"" ""
-PENS
-"Spatial" 1.0 0 -11053225 true "" ""
-"Temporal" 1.0 0 -11881837 true "" ""
-
-PLOT
-1224
-436
-1580
-556
-Speed
-Time
-Speed
-0.0
-0.0
-0.0
-0.0
-true
-true
-"" ""
-PENS
-"Mean" 1.0 0 -11053225 true "" ""
-"Stddev" 1.0 0 -11881837 true "" ""
-
 SLIDER
-189
-687
-364
-720
+1400
+459
+1575
+492
 V0
 V0
 0
@@ -988,47 +938,11 @@ flow-cum / time / world-height
 1
 11
 
-PLOT
-1225
-680
-1412
-800
-Fundamental diagram
-Density
-Flow
-0.0
-0.0
-0.0
-0.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -11053225 true "" ""
-
-PLOT
-1415
-680
-1580
-800
-Speed stddev
-Density
-Stddev
-0.0
-0.0
-0.0
-0.7
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -11053225 true "" ""
-
 SLIDER
-11
-687
-186
-720
+1222
+459
+1397
+492
 dt
 dt
 0
@@ -1040,10 +954,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-189
-723
-364
-756
+1400
+495
+1575
+528
 D
 D
 0.1
@@ -1072,30 +986,30 @@ NIL
 1
 
 SLIDER
-12
-723
-186
-756
+1223
+495
+1397
+528
 A
 A
 0
 5
-1.0
+0.5
 .1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-12
-759
-187
-792
+1223
+531
+1398
+564
 Tr
 Tr
 .1
 2
-0.5
+1.3
 .1
 1
 NIL
@@ -1290,7 +1204,7 @@ area-of-awareness
 area-of-awareness
 0
 20
-10.0
+15.0
 1
 1
 NIL
@@ -1346,7 +1260,7 @@ SWITCH
 510
 write-output?
 write-output?
-1
+0
 1
 -1000
 
@@ -1463,10 +1377,10 @@ Additional options
 1
 
 TEXTBOX
-14
-670
-309
-698
+1225
+442
+1520
+470
 Speed and Social Force (maybe just remove from interface)
 11
 0.0
