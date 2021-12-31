@@ -8,11 +8,13 @@
 ; - Sort paths by shortest distance (ASC)
 ; - Fix and finish testing environments 1 & 2.
 ; - highlight starting/origin nodes
-; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)
+; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)!!!
 ; - Fix bugs (e.g. contact stamps)
 ; - think of an idea to implement neighborhoods (moore and van neumann!!!)
 ; - implement UKM floorplan!
 ; - light and dark mode
+; - use directed links between nodes??
+; -
 
 extensions [csv gis]
 
