@@ -10,7 +10,9 @@
 ; - highlight starting/origin nodes
 ; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)
 ; - Fix bugs (e.g. contact stamps)
-; - Write model info! (second tab)
+; - think of an idea to implement neighborhoods (moore and van neumann!!!)
+; - implement UKM floorplan!
+; - light and dark mode
 
 extensions [csv gis]
 
@@ -993,7 +995,7 @@ SLIDER
 A
 A
 0
-5
+1
 0.5
 .1
 1
@@ -1217,7 +1219,7 @@ SWITCH
 577
 show-paths?
 show-paths?
-0
+1
 1
 -1000
 
@@ -1426,39 +1428,42 @@ HORIZONTAL
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+This model simulates people in indoor envirionments being guided by public displays.
+The displays show dynamic content and aim to guide the people to their destination with a minimum amount of contacts to other people.
 
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+The people move towards their destination along a path and are also aware of each other. They keep some distance to other agents and follow the instructions of the public displays whenever they encounter them (if they are not familiar with the building). The detection of other agents around public displays is achieved by scanning the surrounding area everytime a person needs further instructions.
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+To initialize the simulation, select a scenario, choose your preferences and click setup. By clicking simulate, the simulation runs automatically.
 
 ## THINGS TO NOTICE
 
-(suggested things for the user to notice while running the model)
+When running the simulation note the movement of the people, their reaction if they encounter a public display and their behavior when close to other agents.
 
 ## THINGS TO TRY
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+Feel free to experiment with each input on the interface. There are many different options and additional features that can be explored.
 
 ## EXTENDING THE MODEL
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+This model can be further enhanced with more different type of people, different scenarios and more detailed interaction with the public displays.
 
 ## NETLOGO FEATURES
 
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
+This model uses the netlogo csv and netlogo gis extensions. They do not have to be installed separately and come with the basic netlogo software.
 
-## RELATED MODELS
-
-(models in the NetLogo Models Library and elsewhere which are of related interest)
 
 ## CREDITS AND REFERENCES
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+Model created by
+
+Christian Terbeck
+christian.terbeck@uni-muenster.de
+
+More details of this model can be found in my master thesis "Optimizing Social Distance Keeping in Indoor Environments via a Public Display Navigation Support System"
 @#$#@#$#@
 default
 true
