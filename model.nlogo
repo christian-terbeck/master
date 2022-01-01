@@ -5,7 +5,6 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
-; - Sort paths by shortest distance (ASC)
 ; - Fix and finish testing environments
 ; - highlight starting/origin nodes
 ; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)!!!
@@ -368,7 +367,7 @@ to init-ped [k]
   init-paths self origin destination
   update-path self origin
 
-  if show-circles? [
+  if show-circles? and scenario != "testing-environment-2" [
     create-circle
   ]
 
@@ -437,6 +436,7 @@ to init-paths [k node1 node2]
   set paths []
   set current-path []
   set-paths self (list (list node1))
+  ;sort-paths self
 end
 
 ; @method update-path
@@ -595,12 +595,82 @@ to set-paths [k origin-nodes]
     set new-origin-nodes remove-item pos new-origin-nodes
   ]
 
-  if not empty? filter [i -> [is-destination?] of last i = false] new-origin-nodes [
+  ;if not empty? filter [i -> [is-destination?] of last i = false] new-origin-nodes [
+  if not empty? filter [i -> [not (is-destination?)] of last i] new-origin-nodes [
     set-paths self new-origin-nodes
   ]
 end
 
-; @method set-paths
+; @method sort-paths
+; @description Sorts the agent`s paths by distance
+; @param ped k
+
+to sort-paths [k]
+  let sorted-paths []
+  let cur-paths paths
+  let distances []
+  let path-distance 0
+  let cur-last-node nobody
+  let node-distance 0
+
+  foreach cur-paths [i ->
+    set path-distance 0
+    set cur-last-node nobody
+    set node-distance 0
+
+    foreach i [j ->
+      if cur-last-node != nobody [
+        ask j [
+          set node-distance distance cur-last-node
+        ]
+
+        set path-distance path-distance + node-distance
+      ]
+
+     set cur-last-node j
+    ]
+
+    set sorted-paths lput i sorted-paths
+    set distances lput path-distance distances
+  ]
+
+  set path-distance 0
+  let counter 0
+  let tmp-distance 0
+  let tmp-path []
+  let is-sorted? false
+
+  print distances
+
+  while [not (is-sorted?)] [
+    set counter 0
+    set is-sorted? true
+
+    foreach distances [i ->
+      if counter > 0 and i < path-distance [
+        set tmp-distance i
+        set tmp-path item counter sorted-paths
+
+        set distances replace-item counter distances item (counter - 1) distances
+        set sorted-paths replace-item counter sorted-paths item (counter - 1) sorted-paths
+
+        set distances replace-item (counter - 1) distances tmp-distance
+        set sorted-paths replace-item (counter - 1) sorted-paths tmp-path
+
+        set is-sorted? false
+      ]
+
+      set path-distance i
+      set counter counter + 1
+    ]
+  ]
+
+  print distances
+
+  set paths sorted-paths
+end
+
+; @method hide-me
 ; @description Hides the ped and its related agents
 ; @param ped k
 
@@ -888,7 +958,7 @@ initial-number-of-people
 initial-number-of-people
 0
 50
-0.0
+1.0
 1
 1
 NIL
@@ -1092,7 +1162,7 @@ critical-period
 critical-period
 1
 120
-30.0
+50.0
 1
 1
 NIL
@@ -1278,7 +1348,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4"
-2
+3
 
 SWITCH
 9
@@ -1497,7 +1567,7 @@ spawn-rate
 spawn-rate
 0
 100
-50.0
+0.0
 1
 1
 NIL
