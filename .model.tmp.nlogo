@@ -30,7 +30,6 @@ globals [
   total-number-of-familiar-people
   time
   level-switching-duration
-  mean-visiting-time
   overall-contacts
   overall-contact-time
   unique-contacts
@@ -47,6 +46,7 @@ peds-own [
   is-familiar?
   is-visiting?
   has-visited?
+  visiting-time
   is-waiting?
   waiting-time
   current-level
@@ -345,6 +345,7 @@ to create-ped
     set is-initialized? false
     set is-familiar? false
     set is-visiting? true ;Todo: check this feature: does this only apply to the hospital scenario?
+    set visiting-time mean-visiting-time + random-normal 0 0.2
     set has-visited? false
     set is-waiting? false
     set origin tmp-first-node
@@ -756,10 +757,19 @@ to simulate
         ]
 
         ifelse is-visiting? and not has-visited? [
-          init-paths self destination origin
-          update-path self origin
+          ifelse visiting-time > 0 [
+            if not hidden? [
+              hide-me self
+            ]
 
-          set has-visited? true
+            set visiting-time visiting-time - 1
+          ] [
+            init-paths self destination origin
+            update-path self origin
+
+            set has-visited? true
+            show-me self
+          ]
         ] [
           ask in-link-neighbors [
             die
@@ -804,7 +814,7 @@ to simulate
     update-path self last-node
   ]
 
-  if spawn-rate > 0 and ticks > 0 and ticks mod spawn-rate = 0 [
+  if spawn-rate > 0 and ticks > 0 and ticks mod spawn-rate = 0 and count peds < max-capacity [
     create-ped
 
     ask peds with [not (is-initialized?)] [
@@ -845,8 +855,8 @@ end
 GRAPHICS-WINDOW
 380
 10
-1207
-838
+1208
+839
 -1
 -1
 20.0
@@ -871,9 +881,9 @@ Ticks
 
 SLIDER
 8
-119
+120
 183
-152
+153
 initial-number-of-people
 initial-number-of-people
 0
@@ -919,10 +929,10 @@ NIL
 1
 
 SLIDER
-1400
-459
-1575
-492
+1402
+452
+1577
+485
 V0
 V0
 0
@@ -934,10 +944,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-1223
-387
-1288
-432
+1490
+10
+1579
+55
 Time
 time
 17
@@ -945,21 +955,21 @@ time
 11
 
 MONITOR
-1292
-387
-1352
-432
+1424
+10
+1485
+55
 Density
 count peds / world-width / world-height
-5
+3
 1
 11
 
 SLIDER
-1222
-459
-1397
-492
+1224
+452
+1399
+485
 dt
 dt
 0
@@ -971,10 +981,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-1400
-495
-1575
-528
+1402
+488
+1577
+521
 D
 D
 0.1
@@ -1003,10 +1013,10 @@ NIL
 1
 
 SLIDER
-1223
-495
-1397
-528
+1225
+488
+1399
+521
 A
 A
 0
@@ -1018,10 +1028,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-1223
-531
-1398
-564
+1225
+524
+1400
+557
 Tr
 Tr
 .1
@@ -1033,10 +1043,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-8
-154
-184
 187
+120
+363
+153
 familiarity-rate
 familiarity-rate
 0
@@ -1048,10 +1058,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-11
-581
-185
-614
+14
+626
+188
+659
 show-logs?
 show-logs?
 1
@@ -1059,10 +1069,10 @@ show-logs?
 -1000
 
 SLIDER
-9
-380
-181
-413
+12
+425
+184
+458
 contact-radius
 contact-radius
 0
@@ -1074,10 +1084,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-184
-380
-356
-413
+187
+425
+359
+458
 critical-period
 critical-period
 1
@@ -1089,10 +1099,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-9
-416
-181
-449
+12
+461
+184
+494
 contact-tolerance
 contact-tolerance
 0
@@ -1104,10 +1114,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-1223
-10
-1398
-55
+1224
+58
+1399
+103
 Number of contacts
 overall-contacts / 2
 0
@@ -1115,10 +1125,10 @@ overall-contacts / 2
 11
 
 MONITOR
-1403
-10
-1579
-55
+1404
+58
+1580
+103
 Avg. number of contacts per person
 overall-contacts / 2 / total-number-of-people
 3
@@ -1126,10 +1136,10 @@ overall-contacts / 2 / total-number-of-people
 11
 
 MONITOR
-1223
-58
-1399
-103
+1224
+106
+1400
+151
 Unique contacts
 unique-contacts / 2
 0
@@ -1137,10 +1147,10 @@ unique-contacts / 2
 11
 
 MONITOR
-1403
-58
-1579
-103
+1404
+106
+1580
+151
 Critical contacts
 critical-contacts / 2
 0
@@ -1148,10 +1158,10 @@ critical-contacts / 2
 11
 
 MONITOR
-1223
-106
-1400
-151
+1224
+154
+1401
+199
 Avg. contact duration
 overall-contact-time / overall-contacts
 3
@@ -1159,10 +1169,10 @@ overall-contact-time / overall-contacts
 11
 
 MONITOR
-1404
-106
-1579
-151
+1405
+154
+1580
+199
 Avg. contact distance
 contact-distance / contact-distance-values
 3
@@ -1170,10 +1180,10 @@ contact-distance / contact-distance-values
 11
 
 PLOT
-1224
-157
-1580
-370
+1225
+205
+1581
+418
 Contacts
 ticks
 contacts
@@ -1191,10 +1201,10 @@ PENS
 "unique-contacts" 1.0 0 -955883 true "" "plot (unique-contacts / 2)"
 
 SWITCH
-184
-417
-356
-450
+187
+462
+359
+495
 show-circles?
 show-circles?
 0
@@ -1202,10 +1212,10 @@ show-circles?
 -1000
 
 SWITCH
-11
-617
-186
-650
+14
+662
+189
+695
 show-labels?
 show-labels?
 0
@@ -1213,10 +1223,10 @@ show-labels?
 -1000
 
 SLIDER
-186
-248
-358
-281
+189
+293
+361
+326
 area-of-awareness
 area-of-awareness
 0
@@ -1228,10 +1238,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-10
-544
-184
-577
+13
+589
+187
+622
 show-paths?
 show-paths?
 0
@@ -1239,10 +1249,10 @@ show-paths?
 -1000
 
 SWITCH
-188
-544
-364
-577
+191
+589
+367
+622
 show-walking-paths?
 show-walking-paths?
 1
@@ -1250,10 +1260,10 @@ show-walking-paths?
 -1000
 
 SWITCH
-188
-582
-364
-615
+191
+627
+367
+660
 show-contacts?
 show-contacts?
 1
@@ -1271,10 +1281,10 @@ scenario
 2
 
 SWITCH
-9
-479
-183
-512
+12
+524
+186
+557
 write-output?
 write-output?
 0
@@ -1282,10 +1292,10 @@ write-output?
 -1000
 
 INPUTBOX
-187
-121
-363
-181
+186
+154
+362
+214
 stop-at-ticks
 1000000.0
 1
@@ -1293,10 +1303,10 @@ stop-at-ticks
 Number
 
 SLIDER
-8
-248
-183
-281
+11
+293
+186
+326
 angle-of-awareness
 angle-of-awareness
 0
@@ -1308,10 +1318,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-9
-320
-181
-353
+12
+365
+184
+398
 show-areas-of-awareness?
 show-areas-of-awareness?
 1
@@ -1319,10 +1329,10 @@ show-areas-of-awareness?
 -1000
 
 SLIDER
-186
-479
-358
-512
+189
+524
+361
+557
 output-steps
 output-steps
 10
@@ -1354,60 +1364,60 @@ Main setup
 1
 
 TEXTBOX
-11
-463
-161
-481
+14
+508
+164
+526
 Output generation
 11
 0.0
 1
 
 TEXTBOX
-10
-231
-160
-249
+13
+276
+163
+294
 Public Display settings
 11
 0.0
 1
 
 TEXTBOX
-10
-364
-160
-382
+13
+409
+163
+427
 Contact settings
 11
 0.0
 1
 
 TEXTBOX
-11
-526
-161
-544
+14
+571
+164
+589
 Additional options
 11
 0.0
 1
 
 TEXTBOX
-1225
-442
-1520
-470
+1227
+435
+1522
+463
 Speed and Social Force (maybe just remove from interface)
 11
 0.0
 1
 
 SWITCH
-9
-284
-182
-317
+12
+329
+185
+362
 use-stop-feature?
 use-stop-feature?
 1
@@ -1415,10 +1425,10 @@ use-stop-feature?
 -1000
 
 SWITCH
-186
-320
-359
-353
+189
+365
+362
+398
 use-static-signage?
 use-static-signage?
 1
@@ -1426,10 +1436,10 @@ use-static-signage?
 -1000
 
 SLIDER
-186
-284
-358
-317
+189
+329
+361
+362
 max-waiting-time
 max-waiting-time
 0
@@ -1441,10 +1451,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-11
-682
-186
-715
+14
+727
+189
+760
 NIL
 show-coordinate
 T
@@ -1458,10 +1468,10 @@ NIL
 1
 
 SWITCH
-188
-617
-364
-650
+191
+662
+367
+695
 use-dark-mode?
 use-dark-mode?
 1
@@ -1469,10 +1479,10 @@ use-dark-mode?
 -1000
 
 TEXTBOX
-14
-665
-164
-683
+17
+710
+167
+728
 Helper functions
 11
 0.0
@@ -1480,11 +1490,63 @@ Helper functions
 
 SLIDER
 8
+155
+184
+188
+spawn-rate
+spawn-rate
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+8
 189
 184
 222
-spawn-rate
-spawn-rate
+max-capacity
+max-capacity
+0
+100
+3.0
+1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+1224
+10
+1322
+55
+Current visitors
+count peds
+0
+1
+11
+
+MONITOR
+1326
+10
+1420
+55
+Visitors in total
+total-number-of-people
+0
+1
+11
+
+SLIDER
+203
+243
+375
+276
+mean-visiting-time
+mean-visiting-time
 0
 100
 50.0
