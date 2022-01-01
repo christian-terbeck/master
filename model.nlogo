@@ -695,16 +695,16 @@ end
 ; @description Traces the contacts that occur between the peds
 
 to trace-contacts
-  ask peds [
+  ask peds with [not (hidden?)] [
     let has-contact-to []
 
-    ask peds in-radius contact-radius with [not (self = myself)] [
+    ask peds in-radius contact-radius with [not (self = myself) and not (hidden?)] [
       ifelse not member? [who] of myself active-contacts [
         set active-contacts lput [who] of myself active-contacts
         set active-contacts-periods lput 1 active-contacts-periods
 
         if show-logs? [
-         print word self word " started contact with " myself
+          print word self word " started contact with " myself
         ]
       ] [
         let pos position [who] of myself active-contacts
@@ -776,6 +776,104 @@ to trace-contacts
   ]
 end
 
+; @method move
+; @description Moves the ped
+; @param ped k
+
+to move [k]
+  let hd towards next-node
+  let h hd
+  let repx 0
+  let repy 0
+
+  if not (speedx * speedy = 0) [
+    set h atan speedx speedy
+  ]
+
+  ;Todo: adjust and maybe move to external report function?
+
+  ask peds in-cone (D) 120 with [not (self = myself)] [
+    ifelse distance destination < D or distance next-node < D [
+      set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
+      set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+    ] [
+      set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
+      set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+    ]
+  ]
+
+  ;Todo: work on social force when it comes to black patches - maybe just prevent walking on black patches
+
+  ask patches in-radius (D) with [pcolor = 0] [
+    set repx repx + (A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))) / 5
+    set repy repy + (A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))) / 5
+  ]
+
+  set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
+  set speedy speedy + dt * (repy + (V0 * cos hd - speedy) / Tr)
+
+  if distance next-node < D / 2 [
+    set last-node next-node
+
+    ifelse distance destination < D / 2 [
+      if show-logs? [
+        print word self " has reached its destination"
+      ]
+
+      ifelse is-visiting? and not has-visited? [
+        ifelse visiting-time > 0 [
+          if not hidden? [
+            hide-me self
+          ]
+
+          set visiting-time visiting-time - 1
+        ] [
+          init-paths self destination origin
+          update-path self origin
+
+          set has-visited? true
+          show-me self
+        ]
+      ] [
+        ask in-link-neighbors [
+          die
+        ]
+
+        die
+      ]
+    ] [
+      let pos (position next-node current-path) + 1
+
+      ifelse [level] of item pos current-path != current-level [
+        ifelse level-switching-time < level-switching-duration [
+          if not hidden? [
+            hide-me self
+          ]
+
+          set level-switching-time level-switching-time + 1
+        ] [
+          set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
+          set next-node item pos current-path
+          move-to next-node
+          set current-level [level] of next-node
+          set level-switching-time 0
+          show-me self
+        ]
+      ] [
+        ifelse not is-familiar? [
+          set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
+          update-path self next-node
+        ] [
+          set next-node item pos current-path
+        ]
+      ]
+    ]
+  ]
+
+  set xcor xcor + speedx * dt
+  set ycor ycor + speedy * dt
+end
+
 ; @method simulate
 ; @description Runs the simulation, which includes the movement of the agents, the event handling, output writing, etc.
 
@@ -785,102 +883,12 @@ to simulate
 
   trace-contacts
 
-  ask peds with [not (is-waiting?)] [
-    let hd towards next-node
-    let h hd
-    let repx 0
-    let repy 0
-
-    if not (speedx * speedy = 0) [
-      set h atan speedx speedy
+  ask peds [
+    ifelse is-waiting? [
+      update-path self last-node
+    ] [
+      move self
     ]
-
-    ;Todo: adjust and maybe move to external report function?
-
-    ask peds in-cone (D) 120 with [not (self = myself)] [
-      ifelse distance destination < D or distance next-node < D [
-        set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-        set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
-      ] [
-        set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-        set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
-      ]
-    ]
-
-    ;Todo: work on social force when it comes to black patches - maybe just prevent walking on black patches
-
-    ask patches in-radius (D) with [pcolor = 0] [
-      set repx repx + (A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))) / 5
-      set repy repy + (A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))) / 5
-    ]
-
-    set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
-    set speedy speedy + dt * (repy + (V0 * cos hd - speedy) / Tr)
-
-    if distance next-node < D / 2 [
-      set last-node next-node
-
-      ifelse distance destination < D / 2 [
-        if show-logs? [
-          print word self " has reached its destination"
-        ]
-
-        ifelse is-visiting? and not has-visited? [
-          ifelse visiting-time > 0 [
-            if not hidden? [
-              hide-me self
-            ]
-
-            set visiting-time visiting-time - 1
-          ] [
-            init-paths self destination origin
-            update-path self origin
-
-            set has-visited? true
-            show-me self
-          ]
-        ] [
-          ask in-link-neighbors [
-            die
-          ]
-
-          die
-        ]
-      ] [
-        let pos (position next-node current-path) + 1
-
-        ifelse [level] of item pos current-path != current-level [
-          ifelse level-switching-time < level-switching-duration [
-            if not hidden? [
-              hide-me self
-            ]
-
-            set level-switching-time level-switching-time + 1
-          ] [
-            set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
-            set next-node item pos current-path
-            move-to next-node
-            set current-level [level] of next-node
-            set level-switching-time 0
-            show-me self
-          ]
-        ] [
-          ifelse not is-familiar? [
-            set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
-            update-path self next-node
-          ] [
-            set next-node item pos current-path
-          ]
-        ]
-      ]
-    ]
-
-    set xcor xcor + speedx * dt
-    set ycor ycor + speedy * dt
-  ]
-
-  ask peds with [is-waiting?] [
-    update-path self last-node
   ]
 
   if spawn-rate > 0 and ticks > 0 and ticks mod spawn-rate = 0 and count peds < max-capacity [
@@ -1127,10 +1135,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-11
-587
-185
-620
+10
+588
+184
+621
 show-logs?
 show-logs?
 1
@@ -1281,10 +1289,10 @@ show-circles?
 -1000
 
 SWITCH
-11
-623
-186
-656
+10
+624
+185
+657
 show-labels?
 show-labels?
 0
@@ -1307,10 +1315,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-10
-550
-184
-583
+9
+551
+183
+584
 show-paths?
 show-paths?
 0
@@ -1318,10 +1326,10 @@ show-paths?
 -1000
 
 SWITCH
-188
-550
-364
-583
+187
+551
+363
+584
 show-walking-paths?
 show-walking-paths?
 1
@@ -1329,10 +1337,10 @@ show-walking-paths?
 -1000
 
 SWITCH
-188
-588
-364
-621
+187
+589
+363
+622
 show-contacts?
 show-contacts?
 1
@@ -1350,10 +1358,10 @@ scenario
 4
 
 SWITCH
-9
-485
-183
-518
+8
+486
+182
+519
 write-output?
 write-output?
 0
@@ -1361,10 +1369,10 @@ write-output?
 -1000
 
 INPUTBOX
-11
-723
-187
-783
+10
+724
+186
+784
 stop-at-ticks
 1000000.0
 1
@@ -1398,10 +1406,10 @@ show-areas-of-awareness?
 -1000
 
 SLIDER
-186
-485
-358
-518
+185
+486
+357
+519
 output-steps
 output-steps
 10
@@ -1433,10 +1441,10 @@ Main setup
 1
 
 TEXTBOX
-11
-469
-161
-487
+10
+470
+160
+488
 Output generation
 11
 0.0
@@ -1463,10 +1471,10 @@ Contact settings
 1
 
 TEXTBOX
-11
-532
-161
-550
+10
+533
+160
+551
 Additional options
 11
 0.0
@@ -1520,10 +1528,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-11
-688
-186
-721
+10
+689
+185
+722
 NIL
 show-coordinate
 T
@@ -1536,22 +1544,11 @@ NIL
 NIL
 1
 
-SWITCH
-188
-623
-364
-656
-use-dark-mode?
-use-dark-mode?
-1
-1
--1000
-
 TEXTBOX
-14
-671
-164
-689
+13
+672
+163
+690
 Helper functions
 11
 0.0
@@ -1610,9 +1607,9 @@ total-number-of-people
 11
 
 SLIDER
-188
+187
 155
-360
+363
 188
 mean-visiting-time
 mean-visiting-time
