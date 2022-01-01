@@ -9,7 +9,7 @@
 ; - Fix and finish testing environments
 ; - highlight starting/origin nodes
 ; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)!!!
-; - Fix bugs (e.g. contact stamps)
+; - Fix bugs (e.g. directed links and undirected links in one scenario 2, contact stamps)
 ; - think of an idea to implement neighborhoods (moore and van neumann!!!)
 ; - implement UKM floorplan!
 ; - light and dark mode
@@ -26,6 +26,8 @@ globals [
   output-contacts
   output-critical-contacts
   output-unique-contacts
+  total-number-of-people
+  total-number-of-familiar-people
   time
   level-switching-duration
   mean-visiting-time
@@ -39,6 +41,7 @@ globals [
 
 breed [peds ped]
 peds-own [
+  is-initialized?
   speedx
   speedy
   is-familiar?
@@ -307,25 +310,16 @@ end
 ; @description Sets the agents/peds of the model
 
 to set-agents
-  repeat number-of-people [create-ped]
+  repeat initial-number-of-people [
+    create-ped
+  ]
 
-  ask n-of round (familiarity-rate * number-of-people) peds [
-    set is-familiar? true
-    set shape "person doctor"
-    set color blue
+  ask n-of round (familiarity-rate * total-number-of-people) peds [
+    make-familiar self
   ]
 
   ask peds [
-    init-paths self origin destination
-    update-path self origin
-
-    if show-circles? [
-      create-circle
-    ]
-
-    if show-walking-paths? [
-      pen-down
-    ]
+    init-ped self
   ]
 end
 
@@ -337,7 +331,7 @@ to create-ped
   let y 0
   let tmp-first-node nobody
 
-  ask one-of nodes with [is-origin? = true] [
+  ask one-of nodes with [is-origin?] [
     set x pxcor
     set y pycor
     set tmp-first-node self
@@ -348,12 +342,13 @@ to create-ped
     set color cyan
     set xcor x + random-normal 0 0.2
     set ycor y + random-normal 0 0.2
+    set is-initialized? false
     set is-familiar? false
-    set is-visiting? true ;temporarily
+    set is-visiting? true ;Todo: check this feature: does this only apply to the hospital scenario?
     set has-visited? false
     set is-waiting? false
     set origin tmp-first-node
-    set destination one-of nodes with [is-destination? = true]
+    set destination one-of nodes with [is-destination? and not (self = tmp-first-node)]
     set current-level [level] of tmp-first-node
 
     set had-contact-with []
@@ -361,6 +356,37 @@ to create-ped
     set active-contacts-periods []
     set label-color black
   ]
+
+  set total-number-of-people total-number-of-people + 1
+end
+
+; @method init-ped
+; @description Initializes the ped after creation
+
+to init-ped [k]
+  init-paths self origin destination
+  update-path self origin
+
+  if show-circles? [
+    create-circle
+  ]
+
+  if show-walking-paths? [
+    pen-down
+  ]
+
+  set is-initialized? true
+end
+
+; @method make-familiar
+; @description "Make the ped familiar" with the building
+
+to make-familiar [k]
+  set is-familiar? true
+  set shape "person doctor"
+  set color blue
+
+  set total-number-of-familiar-people total-number-of-familiar-people + 1
 end
 
 ; @method link-nodes
@@ -711,10 +737,12 @@ to simulate
       ]
     ]
 
-    ask patches in-radius (D) with [pcolor = 0] [
-      set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-      set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
-    ]
+    ;Todo: work on social force when it comes to black patches - maybe just prevent walking on black patches
+
+;    ask patches in-radius (D) with [pcolor = 0] [
+;      set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
+;      set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+;    ]
 
     set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
     set speedy speedy + dt * (repy + (V0 * cos hd - speedy) / Tr)
@@ -776,6 +804,18 @@ to simulate
     update-path self last-node
   ]
 
+  if spawn-rate > 0 and ticks > 0 and ticks mod spawn-rate = 0 [
+    create-ped
+
+    ask peds with [not (is-initialized?)] [
+      if familiarity-rate > 0 and ((total-number-of-familiar-people > 0 and total-number-of-familiar-people / total-number-of-people < familiarity-rate) or total-number-of-familiar-people < 1) [
+        make-familiar self
+      ]
+
+      init-ped self
+    ]
+  ]
+
   if write-output? and ticks mod output-steps = 0 [
     set output-ticks lput ticks output-ticks
     set output-contacts lput round (overall-contacts / 2) output-contacts
@@ -783,7 +823,7 @@ to simulate
     set output-unique-contacts lput round (unique-contacts / 2) output-unique-contacts
   ]
 
-  if count peds < 1 or ticks = stop-at-ticks [
+  if (count peds < 1 and spawn-rate < 1) or ticks = stop-at-ticks [
     if write-output? [
       csv:to-file output-path (list (output-ticks) (output-contacts) (output-critical-contacts) (output-unique-contacts))
 
@@ -805,8 +845,8 @@ end
 GRAPHICS-WINDOW
 380
 10
-1208
-839
+1207
+838
 -1
 -1
 20.0
@@ -831,14 +871,14 @@ Ticks
 
 SLIDER
 8
-121
+119
 183
-154
-number-of-people
-number-of-people
+152
+initial-number-of-people
+initial-number-of-people
 0
 50
-1.0
+0.0
 1
 1
 NIL
@@ -910,7 +950,7 @@ MONITOR
 1352
 432
 Density
-number-of-people / world-width / world-height
+count peds / world-width / world-height
 5
 1
 11
@@ -993,10 +1033,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-187
-121
-363
+8
 154
+184
+187
 familiarity-rate
 familiarity-rate
 0
@@ -1020,9 +1060,9 @@ show-logs?
 
 SLIDER
 9
-378
+380
 181
-411
+413
 contact-radius
 contact-radius
 0
@@ -1035,9 +1075,9 @@ HORIZONTAL
 
 SLIDER
 184
-378
+380
 356
-411
+413
 critical-period
 critical-period
 1
@@ -1050,9 +1090,9 @@ HORIZONTAL
 
 SLIDER
 9
-414
+416
 181
-447
+449
 contact-tolerance
 contact-tolerance
 0
@@ -1080,7 +1120,7 @@ MONITOR
 1579
 55
 Avg. number of contacts per person
-overall-contacts / 2 / number-of-people
+overall-contacts / 2 / total-number-of-people
 3
 1
 11
@@ -1146,18 +1186,18 @@ true
 "" ""
 PENS
 "overall-contacts" 1.0 0 -16777216 true "" "plot (overall-contacts / 2)"
-"average-contacts" 1.0 0 -7500403 true "" "plot (overall-contacts /  number-of-people) * 2"
+"average-contacts" 1.0 0 -7500403 true "" "plot (overall-contacts /  total-number-of-people) * 2"
 "critical-contacts" 1.0 0 -2674135 true "" "plot (critical-contacts / 2)"
 "unique-contacts" 1.0 0 -955883 true "" "plot (unique-contacts / 2)"
 
 SWITCH
 184
-415
+417
 356
-448
+450
 show-circles?
 show-circles?
-1
+0
 1
 -1000
 
@@ -1174,9 +1214,9 @@ show-labels?
 
 SLIDER
 186
-245
+248
 358
-278
+281
 area-of-awareness
 area-of-awareness
 0
@@ -1228,13 +1268,13 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4"
-3
+2
 
 SWITCH
 9
-477
+479
 183
-510
+512
 write-output?
 write-output?
 0
@@ -1242,10 +1282,10 @@ write-output?
 -1000
 
 INPUTBOX
-8
-158
-184
-218
+187
+121
+363
+181
 stop-at-ticks
 1000000.0
 1
@@ -1254,9 +1294,9 @@ Number
 
 SLIDER
 8
-245
+248
 183
-278
+281
 angle-of-awareness
 angle-of-awareness
 0
@@ -1269,9 +1309,9 @@ HORIZONTAL
 
 SWITCH
 9
-317
+320
 181
-350
+353
 show-areas-of-awareness?
 show-areas-of-awareness?
 1
@@ -1280,9 +1320,9 @@ show-areas-of-awareness?
 
 SLIDER
 186
-477
+479
 358
-510
+512
 output-steps
 output-steps
 10
@@ -1315,9 +1355,9 @@ Main setup
 
 TEXTBOX
 11
-461
+463
 161
-479
+481
 Output generation
 11
 0.0
@@ -1325,9 +1365,9 @@ Output generation
 
 TEXTBOX
 10
-228
+231
 160
-246
+249
 Public Display settings
 11
 0.0
@@ -1335,9 +1375,9 @@ Public Display settings
 
 TEXTBOX
 10
-362
+364
 160
-380
+382
 Contact settings
 11
 0.0
@@ -1365,9 +1405,9 @@ Speed and Social Force (maybe just remove from interface)
 
 SWITCH
 9
-281
+284
 182
-314
+317
 use-stop-feature?
 use-stop-feature?
 1
@@ -1376,9 +1416,9 @@ use-stop-feature?
 
 SWITCH
 186
-317
+320
 359
-350
+353
 use-static-signage?
 use-static-signage?
 1
@@ -1387,9 +1427,9 @@ use-static-signage?
 
 SLIDER
 186
-281
+284
 358
-314
+317
 max-waiting-time
 max-waiting-time
 0
@@ -1437,6 +1477,21 @@ Helper functions
 11
 0.0
 1
+
+SLIDER
+8
+189
+184
+222
+spawn-rate
+spawn-rate
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
