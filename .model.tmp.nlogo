@@ -6,7 +6,7 @@
 
 ;Todo:
 ; - Sort paths by shortest distance (ASC)
-; - Fix and finish testing environments 1 & 2.
+; - Fix and finish testing environments
 ; - highlight starting/origin nodes
 ; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)!!!
 ; - Fix bugs (e.g. contact stamps)
@@ -19,6 +19,7 @@
 extensions [csv gis]
 
 globals [
+  interface-width
   resource-path
   output-path
   output-ticks
@@ -27,10 +28,7 @@ globals [
   output-unique-contacts
   time
   level-switching-duration
-  mean-speed
   mean-visiting-time
-  stddev-speed
-  flow-cum
   overall-contacts
   overall-contact-time
   unique-contacts
@@ -105,37 +103,57 @@ to setup
   ]
 end
 
+; @method show-coordinate
+; @description Helper function that prints the coordinate when clicking on the interface (when active)
+
+to show-coordinate
+  if mouse-down? and timer > .2 [
+    reset-timer
+    print word "Clicked at coordinate (" word round mouse-xcor word "/" word round mouse-ycor ")"
+  ]
+end
+
 ; @method set-environment
 ; @description Sets up the environment and defines the fields
 
 to set-environment
-  let dimension 20
-  let field-size 10
+  no-display
+
+  set interface-width 80
+  let dim-x 20
+  let dim-y 20
 
   if scenario = "hospital" [
-    set dimension 40
-    set field-size 10
+    set dim-x 40
+    set dim-y 40
   ]
 
   if scenario = "airport" [
-    set dimension 50
-    set field-size 8
+    set dim-x 80
+    set dim-y 60
   ]
 
-  if scenario = "testing-environment-1" [
-    set dimension 20
-    set field-size 20
+  if scenario = "testing-environment-1" or scenario = "testing-environment-2" [
+    set dim-x 20
+    set dim-y 20
   ]
 
-  if scenario = "testing-environment-2" or scenario = "testing-environment-3" [
-    set dimension 40
-    set field-size 10
+  if scenario = "testing-environment-3" [
+    set dim-x 30
+    set dim-y 20
   ]
 
-  resize-world (dimension * -1) dimension (dimension * -1) dimension
+  if scenario = "testing-environment-4" [
+    set dim-x 40
+    set dim-y 40
+  ]
+
+  resize-world (dim-x * -1) dim-x (dim-y * -1) dim-y
+
+  let field-size interface-width / (dim-x / 5)
   set-patch-size field-size
 
-  set level-switching-duration 10
+  set level-switching-duration 15
 
   gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
 
@@ -156,6 +174,8 @@ to set-environment
 
     import-pcolors word resource-path "floorplan.png"
   ]
+
+  display
 end
 
 ; @method create-circle
@@ -506,7 +526,7 @@ to update-path [k n]
     ]
   ] [
     if empty? paths [
-      error word "No valid route for " word k " detected"
+      error word "No valid route for " word k word " detected (from n" word origin word " to " word destination ")"
     ]
 
     set current-path first paths
@@ -779,31 +799,17 @@ to simulate
     stop
   ]
 
-  ;Todo remove or refactor things like mean speed, cum flow etc.
-
-  if count peds > 1 [
-    set mean-speed mean-speed + mean [sqrt(speedx ^ 2 + speedy ^ 2)] of peds
-  ]
-
-  if count peds > 1 [
-    set stddev-speed stddev-speed + sqrt(variance [sqrt(speedx ^ 2 + speedy ^ 2)] of peds)
-  ]
-
-  ask peds with [(xcor > 0 and xcor - speedx * dt <= 0) or (xcor < 0 and xcor - speedx * dt >= 0) or (ycor > 0 and ycor - speedy * dt <= 0) or (ycor < 0 and ycor - speedy * dt >= 0)] [
-    set flow-cum flow-cum + 1
-  ]
-
   update-plots
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
 380
 10
-1198
-829
+1208
+839
 -1
 -1
-10.0
+20.0
 1
 10
 1
@@ -813,10 +819,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--40
-40
--40
-40
+-20
+20
+-20
+20
 0
 0
 1
@@ -832,7 +838,7 @@ number-of-people
 number-of-people
 0
 50
-4.0
+1.0
 1
 1
 NIL
@@ -899,45 +905,12 @@ time
 11
 
 MONITOR
-1355
-387
-1428
-432
-Mean speed
-mean [sqrt(speedx ^ 2 + speedy ^ 2)] of peds
-5
-1
-11
-
-MONITOR
-1431
-387
-1511
-432
-Speed stddev
-stddev-speed / ticks
-5
-1
-11
-
-MONITOR
 1292
 387
 1352
 432
 Density
 number-of-people / world-width / world-height
-5
-1
-11
-
-MONITOR
-1514
-387
-1580
-432
-Flow
-flow-cum / time / world-height
 5
 1
 11
@@ -1184,7 +1157,7 @@ SWITCH
 448
 show-circles?
 show-circles?
-0
+1
 1
 -1000
 
@@ -1221,7 +1194,7 @@ SWITCH
 577
 show-paths?
 show-paths?
-1
+0
 1
 -1000
 
@@ -1254,8 +1227,8 @@ CHOOSER
 117
 scenario
 scenario
-"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3"
-4
+"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4"
+3
 
 SWITCH
 9
@@ -1426,6 +1399,44 @@ max-waiting-time
 1
 NIL
 HORIZONTAL
+
+BUTTON
+11
+682
+186
+715
+NIL
+show-coordinate
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SWITCH
+188
+617
+364
+650
+use-dark-mode?
+use-dark-mode?
+1
+1
+-1000
+
+TEXTBOX
+14
+665
+164
+683
+Helper functions
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
