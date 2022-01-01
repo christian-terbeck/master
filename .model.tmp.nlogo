@@ -7,13 +7,11 @@
 ;Todo:
 ; - Fix and finish testing environments
 ; - highlight starting/origin nodes
-; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)!!!
-; - Fix bugs (e.g. directed links and undirected links in one scenario 2, contact stamps)
+; - Fix bugs (e.g. contact stamps)
 ; - think of an idea to implement neighborhoods (moore and van neumann!!!)
 ; - implement UKM floorplan!
 ; - light and dark mode
-; - use directed links between nodes??
-;
+; - use directed links between nodes? - this really causes some issues: e.g. only directed or undirected links possible - no mix allowed
 
 extensions [csv gis]
 
@@ -782,7 +780,9 @@ end
 ; @description Runs the simulation, which includes the movement of the agents, the event handling, output writing, etc.
 
 to simulate
-  set time precision (time + dt) 5 tick-advance 1
+  set time precision (time + dt) 5
+  tick-advance 1
+
   trace-contacts
 
   ask peds with [not (is-waiting?)] [
@@ -795,7 +795,7 @@ to simulate
       set h atan speedx speedy
     ]
 
-    ;Todo: move social force to external report function
+    ;Todo: adjust and maybe move to external report function?
 
     ask peds in-cone (D) 120 with [not (self = myself)] [
       ifelse distance destination < D or distance next-node < D [
@@ -809,10 +809,10 @@ to simulate
 
     ;Todo: work on social force when it comes to black patches - maybe just prevent walking on black patches
 
-;    ask patches in-radius (D) with [pcolor = 0] [
-;      set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-;      set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
-;    ]
+    ask patches in-radius (D) with [pcolor = 0] [
+      set repx repx + (A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h)))
+      set repy repy + (A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h)))
+    ]
 
     set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
     set speedy speedy + dt * (repy + (V0 * cos hd - speedy) / Tr)

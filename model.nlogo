@@ -780,7 +780,9 @@ end
 ; @description Runs the simulation, which includes the movement of the agents, the event handling, output writing, etc.
 
 to simulate
-  set time precision (time + dt) 5 tick-advance 1
+  set time precision (time + dt) 5
+  tick-advance 1
+
   trace-contacts
 
   ask peds with [not (is-waiting?)] [
@@ -793,7 +795,7 @@ to simulate
       set h atan speedx speedy
     ]
 
-    ;Todo: move social force to external report function
+    ;Todo: adjust and maybe move to external report function?
 
     ask peds in-cone (D) 120 with [not (self = myself)] [
       ifelse distance destination < D or distance next-node < D [
@@ -807,10 +809,10 @@ to simulate
 
     ;Todo: work on social force when it comes to black patches - maybe just prevent walking on black patches
 
-;    ask patches in-radius (D) with [pcolor = 0] [
-;      set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-;      set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
-;    ]
+    ask patches in-radius (D) with [pcolor = 0] [
+      set repx repx + (A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))) / 5
+      set repy repy + (A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))) / 5
+    ]
 
     set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
     set speedy speedy + dt * (repy + (V0 * cos hd - speedy) / Tr)
@@ -922,11 +924,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1208
-839
+1201
+565
 -1
 -1
-20.0
+13.333333333333334
 1
 10
 1
@@ -936,8 +938,8 @@ GRAPHICS-WINDOW
 0
 0
 1
--20
-20
+-30
+30
 -20
 20
 0
@@ -1345,7 +1347,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4"
-2
+4
 
 SWITCH
 9
@@ -1404,7 +1406,7 @@ output-steps
 output-steps
 10
 500
-10.0
+100.0
 10
 1
 NIL
@@ -1487,7 +1489,7 @@ SWITCH
 323
 use-stop-feature?
 use-stop-feature?
-1
+0
 1
 -1000
 
@@ -1564,7 +1566,7 @@ spawn-rate
 spawn-rate
 0
 100
-0.0
+50.0
 1
 1
 NIL
@@ -1579,7 +1581,7 @@ max-capacity
 max-capacity
 0
 100
-3.0
+5.0
 1
 1
 NIL
