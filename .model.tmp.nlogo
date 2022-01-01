@@ -7,11 +7,13 @@
 ;Todo:
 ; - Fix and finish testing environments
 ; - highlight starting/origin nodes
-; - Fix bugs (e.g. contact stamps)
+; - Improve visiting feature (people spawning at entrances, visiting for a certain amount of time, etc.)!!!
+; - Fix bugs (e.g. directed links and undirected links in one scenario 2, contact stamps)
 ; - think of an idea to implement neighborhoods (moore and van neumann!!!)
 ; - implement UKM floorplan!
 ; - light and dark mode
-; - use directed links between nodes? - this really causes some issues: e.g. only directed or undirected links possible - no mix allowed
+; - use directed links between nodes??
+;
 
 extensions [csv gis]
 
