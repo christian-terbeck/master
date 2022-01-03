@@ -12,6 +12,7 @@
 ; - implement UKM floorplan!
 ; - light and dark mode
 ; - use directed links between nodes? - this really causes some issues: e.g. only directed or undirected links possible - no mix allowed
+; - store paths in file and read file again instead of calculating paths everytime!
 
 extensions [csv gis]
 
