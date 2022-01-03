@@ -13,6 +13,7 @@
 ; - light and dark mode
 ; - use directed links between nodes? - this really causes some issues: e.g. only directed or undirected links possible - no mix allowed
 
+
 extensions [csv gis]
 
 globals [
