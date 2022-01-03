@@ -6,9 +6,9 @@
 
 ;Todo:
 ; - Fix and finish testing environments
-; - Fix bugs (e.g. contact stamps)
+; - Fix bugs (e.g. path finding!!, contact stamps)
 ; - think of an idea to implement neighborhoods (moore and van neumann!!!)
-; - implement UKM floorplan!
+; - Finalize UKM tower and include elevators
 ; - light and dark mode
 ; - use directed links between nodes? - this really causes some issues: e.g. only directed or undirected links possible - no mix allowed
 
@@ -90,7 +90,12 @@ to setup
     set output-unique-contacts []
   ]
 
-  set-default-shape peds "person"
+  ifelse scenario = "airport" [
+    set-default-shape peds "person business"
+  ] [
+    set-default-shape peds "person"
+  ]
+
   set-default-shape circles "circle 2"
 
   set-environment
@@ -100,6 +105,28 @@ to setup
   if show-logs? [
     print "- Setup complete, you may start the simulation now -"
   ]
+end
+
+;Todo add scenario default settings here
+
+; @method restore-default-settings
+; @description Restores the default scenario settings
+
+to restore-default-settings
+  set use-stop-feature? true
+  set use-static-signage? false
+
+  ifelse scenario = "airport" [
+    set area-of-awareness 50
+  ] [
+    set area-of-awareness 20
+  ]
+
+  if show-logs? [
+    print word "Restored default settings for " word scenario " scenario"
+  ]
+
+  setup
 end
 
 ; @method show-coordinate
@@ -123,8 +150,8 @@ to set-environment
   let dim-y 20
 
   if scenario = "hospital" [
-    set dim-x 40
-    set dim-y 40
+    set dim-x 1098 / 2.8
+    set dim-y 1100 / 2.8
   ]
 
   if scenario = "airport" [
@@ -145,6 +172,11 @@ to set-environment
   if scenario = "testing-environment-4" [
     set dim-x 40
     set dim-y 40
+  ]
+
+  if scenario = "testing-environment-5" [
+    set dim-x 1098 / 2.8
+    set dim-y 1100 / 2.8
   ]
 
   resize-world (dim-x * -1) dim-x (dim-y * -1) dim-y
@@ -218,6 +250,12 @@ to set-nodes
   ]
 
   ask nodes [
+    ifelse patch-size < 10 [
+      set size 10 / patch-size
+    ] [
+      set size 1
+    ]
+
     ifelse is-origin? = "true" [
       set is-origin? true
 
@@ -238,7 +276,7 @@ to set-nodes
       set has-public-display? true
 
       set shape "computer server"
-      set size 2
+      set size size * 2
       set color gray
       set hidden? false
     ] [
@@ -270,7 +308,14 @@ to set-nodes
 
   while [not file-at-end?] [
     let arguments (csv:from-row file-read-line " ")
-    link-nodes item 0 arguments item 1 arguments item 2 arguments
+
+    ifelse length arguments = 3 [
+      link-nodes item 0 arguments item 1 arguments item 2 arguments
+    ] [
+      if show-logs? [
+        print "Skipped invalid or empty line in node-links.csv"
+      ]
+    ]
   ]
 
   file-close
@@ -336,6 +381,13 @@ to create-ped
   create-peds 1 [
     set shape "person"
     set color cyan
+
+    ifelse patch-size < 10 [
+      set size 10 / patch-size
+    ] [
+      set size 1
+    ]
+
     set xcor x + random-normal 0 0.2
     set ycor y + random-normal 0 0.2
     set is-initialized? false
@@ -380,7 +432,11 @@ end
 
 to make-familiar [k]
   set is-familiar? true
-  set shape "person doctor"
+
+  if scenario = "hospital" or scenario = "testing-environment-5" [
+    set shape "person doctor"
+  ]
+
   set color blue
 
   set total-number-of-familiar-people total-number-of-familiar-people + 1
@@ -973,11 +1029,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1196
-827
+1166
+797
 -1
 -1
-10.0
+1.0200364298724953
 1
 10
 1
@@ -987,10 +1043,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--40
-40
--40
-40
+-392
+392
+-392
+392
 0
 0
 1
@@ -1348,8 +1404,8 @@ SLIDER
 area-of-awareness
 area-of-awareness
 0
-20
-20.0
+50
+50.0
 1
 1
 NIL
@@ -1395,7 +1451,7 @@ CHOOSER
 117
 scenario
 scenario
-"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4"
+"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5"
 0
 
 SWITCH
@@ -1410,9 +1466,9 @@ write-output?
 -1000
 
 INPUTBOX
-9
+10
 724
-185
+186
 784
 stop-at-ticks
 1000000.0
@@ -1569,9 +1625,9 @@ NIL
 HORIZONTAL
 
 BUTTON
-9
+10
 689
-184
+185
 722
 NIL
 show-coordinate
@@ -1586,9 +1642,9 @@ NIL
 1
 
 TEXTBOX
-12
+13
 672
-162
+163
 690
 Helper functions
 11
@@ -1661,6 +1717,23 @@ mean-visiting-time
 1
 NIL
 HORIZONTAL
+
+BUTTON
+187
+689
+360
+722
+Restore scenario defaults
+restore-default-settings
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
