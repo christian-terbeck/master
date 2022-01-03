@@ -6,13 +6,11 @@
 
 ;Todo:
 ; - Fix and finish testing environments
-; - highlight starting/origin nodes
 ; - Fix bugs (e.g. contact stamps)
 ; - think of an idea to implement neighborhoods (moore and van neumann!!!)
 ; - implement UKM floorplan!
 ; - light and dark mode
 ; - use directed links between nodes? - this really causes some issues: e.g. only directed or undirected links possible - no mix allowed
-
 
 extensions [csv gis]
 
@@ -975,11 +973,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1208
-839
+1196
+827
 -1
 -1
-20.0
+10.0
 1
 10
 1
@@ -989,10 +987,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--20
-20
--20
-20
+-40
+40
+-40
+40
 0
 0
 1
@@ -1197,7 +1195,7 @@ contact-radius
 contact-radius
 0
 10
-3.6
+3.5
 0.1
 1
 NIL
@@ -1351,7 +1349,7 @@ area-of-awareness
 area-of-awareness
 0
 20
-15.0
+20.0
 1
 1
 NIL
@@ -1398,7 +1396,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4"
-2
+5
 
 SWITCH
 8
@@ -1540,7 +1538,7 @@ SWITCH
 323
 use-stop-feature?
 use-stop-feature?
-0
+1
 1
 -1000
 
@@ -1551,7 +1549,7 @@ SWITCH
 359
 use-static-signage?
 use-static-signage?
-1
+0
 1
 -1000
 
