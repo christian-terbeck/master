@@ -16,6 +16,8 @@ extensions [csv gis]
 
 globals [
   interface-width
+  dim-x
+  dim-y
   resource-path
   output-path
   output-ticks
@@ -146,8 +148,8 @@ to set-environment
   no-display
 
   set interface-width 80
-  let dim-x 20
-  let dim-y 20
+  ;let dim-x 20
+  ;let dim-y 20
 
   if not file-exists? word resource-path "config.csv" [
     error word "Scenario configuration file " word resource-path "config.csv is missing"
@@ -160,7 +162,7 @@ to set-environment
   file-open word resource-path "config.csv"
 
   while [not file-at-end?] [
-    let arguments (csv:from-row file-read-line "=")
+    let arguments (csv:from-row file-read-line " ")
 
     ifelse length arguments = 2 [
       run (word "set " item 0 arguments word " " item 1 arguments)
@@ -172,36 +174,6 @@ to set-environment
   ]
 
   file-close
-
-  if scenario = "hospital" [
-    set dim-x 1098 / 2.8
-    set dim-y 1100 / 2.8
-  ]
-
-  if scenario = "airport" [
-    set dim-x 1805 / 3
-    set dim-y 934 / 3
-  ]
-
-  if scenario = "testing-environment-1" or scenario = "testing-environment-2" or scenario = "testing-environment-2" [
-    set dim-x 20
-    set dim-y 20
-  ]
-
-  if scenario = "testing-environment-3" [
-    set dim-x 30
-    set dim-y 20
-  ]
-
-  if scenario = "testing-environment-4" [
-    set dim-x 40
-    set dim-y 40
-  ]
-
-  if scenario = "testing-environment-5" [
-    set dim-x 1098 / 2.8
-    set dim-y 1100 / 2.8
-  ]
 
   resize-world (dim-x * -1) dim-x (dim-y * -1) dim-y
 
@@ -1053,8 +1025,8 @@ end
 GRAPHICS-WINDOW
 380
 10
-1191
-822
+1190
+821
 -1
 -1
 20.0
@@ -1476,7 +1448,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6"
-2
+4
 
 SWITCH
 8
