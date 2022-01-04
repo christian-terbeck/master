@@ -7,8 +7,7 @@
 ;Todo:
 ; - Fix and finish environments (Finalize UKM tower and include elevators and add directed links)
 ; - Fix bugs (issue with wall colors (pcolor) when calculating social force and drawing areas of awareness; contact stamps)
-; - think of an idea to implement neighborhoods (moore and van neumann!!!)
-; - light and dark mode
+; - think of an idea to implement neighborhoods (moore and/or van neumann!!!)
 ; - write short descriptions for every scenario
 
 extensions [csv gis]
@@ -1048,11 +1047,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1189
-822
+1193
+824
 -1
 -1
-1.0928961748633879
+20.0
 1
 10
 1
@@ -1062,10 +1061,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--366
-366
--367
-367
+-20
+20
+-20
+20
 0
 0
 1
@@ -1471,7 +1470,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6"
-7
+2
 
 SWITCH
 8
@@ -1504,7 +1503,7 @@ angle-of-awareness
 angle-of-awareness
 0
 90
-30.0
+35.0
 1
 1
 NIL
