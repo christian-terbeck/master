@@ -6,11 +6,11 @@
 
 ;Todo:
 ; - Fix and finish testing environments
-; - Fix bugs (issue with wall colors (pcolor) when calculating social force and drawing areas of awareness; contact stamps)
+; - Fix bugs (contact stamps)
 ; - think of an idea to implement neighborhoods (moore and van neumann!!!)
 ; - Finalize UKM tower and include elevators
 ; - light and dark mode
-; - use directed links between nodes? - this really causes some issues: e.g. only directed or undirected links possible - no mix allowed..?
+; - use directed links between nodes? - this really causes some issues: e.g. only directed or undirected links possible - no mix allowed
 
 extensions [csv gis]
 
