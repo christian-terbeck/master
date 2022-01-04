@@ -1768,7 +1768,7 @@ To initialize the simulation, select a scenario, choose your preferences and cli
 
 ## THE SCENARIOS
 
-Hospital - UKM in Münster
+Hospital - Th UKM in Münster
 Airport - Amsterdam Schiphol
 Testing Environment 1 - Basic Grid
 Testing Environment 2 - Basic Grid with one way system
