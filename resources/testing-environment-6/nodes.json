@@ -5,19 +5,91 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-27, 17],
+                "coordinates": [-145, -99],
             },
             "properties": {
-                "isOrigin": true,
+                "isOrigin": false,
                 "isDestination": false,
+                "hasPublicDisplay": true,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [68, -98],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": false,
+                "hasPublicDisplay": true,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [98, -94],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": false,
+                "hasPublicDisplay": true,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [101, 144],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": false,
+                "hasPublicDisplay": true,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [143, 251],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": true,
                 "hasPublicDisplay": false,
             }
         },
-	    {
+        {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-15, 17],
+                "coordinates": [227, 251],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": true,
+                "hasPublicDisplay": false,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [259, 168],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": true,
+                "hasPublicDisplay": false,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [214, 138],
             },
             "properties": {
                 "isOrigin": false,
@@ -25,11 +97,11 @@
                 "hasPublicDisplay": true,
             }
         },
-	    {
+        {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [15, 17],
+                "coordinates": [211, -97],
             },
             "properties": {
                 "isOrigin": false,
@@ -37,11 +109,11 @@
                 "hasPublicDisplay": true,
             }
         },
-	    {
+        {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [27, 17],
+                "coordinates": [260, -98],
             },
             "properties": {
                 "isOrigin": true,
@@ -53,7 +125,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-21, 11],
+                "coordinates": [207, -215],
             },
             "properties": {
                 "isOrigin": false,
@@ -65,7 +137,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-15, 11],
+                "coordinates": [102, -216],
             },
             "properties": {
                 "isOrigin": false,
@@ -73,119 +145,11 @@
                 "hasPublicDisplay": true,
             }
         },
-    	{
+        {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [15, 11],
-            },
-            "properties": {
-                "isOrigin": false,
-                "isDestination": true,
-                "hasPublicDisplay": false,
-            }
-        },
-    	{
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [-21, 6],
-            },
-            "properties": {
-                "isOrigin": false,
-                "isDestination": false,
-                "hasPublicDisplay": true,
-            }
-        },
-    	{
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [6, 6],
-            },
-            "properties": {
-                "isOrigin": false,
-                "isDestination": false,
-                "hasPublicDisplay": true,
-            }
-        },
-    	{
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [15, 6],
-            },
-            "properties": {
-                "isOrigin": false,
-                "isDestination": false,
-                "hasPublicDisplay": true,
-            }
-        },
-    	{
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [27, 6],
-            },
-            "properties": {
-                "isOrigin": false,
-                "isDestination": false,
-                "hasPublicDisplay": true,
-            }
-        },
-    	{
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [-21, -6],
-            },
-            "properties": {
-                "isOrigin": false,
-                "isDestination": false,
-                "hasPublicDisplay": true,
-            }
-        },
-    	{
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [-8, -6],
-            },
-            "properties": {
-                "isOrigin": false,
-                "isDestination": true,
-                "hasPublicDisplay": false,
-            }
-        },
-    	{
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [6, -6],
-            },
-            "properties": {
-                "isOrigin": false,
-                "isDestination": false,
-                "hasPublicDisplay": true,
-            }
-        },
-    	{
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [27, -6],
-            },
-            "properties": {
-                "isOrigin": false,
-                "isDestination": false,
-                "hasPublicDisplay": true,
-            }
-        },
-    	{
-            "type": "Feature",
-            "geometry": {
-                "type": "Point",
-                "coordinates": [-27, -17],
+                "coordinates": [100, -259],
             },
             "properties": {
                 "isOrigin": true,
@@ -193,11 +157,11 @@
                 "hasPublicDisplay": false,
             }
         },
-    	{
+        {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-21, -17],
+                "coordinates": [70, -212],
             },
             "properties": {
                 "isOrigin": false,
@@ -205,11 +169,11 @@
                 "hasPublicDisplay": true,
             }
         },
-    	{
+        {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-8, -17],
+                "coordinates": [-142, -232],
             },
             "properties": {
                 "isOrigin": false,
@@ -217,27 +181,39 @@
                 "hasPublicDisplay": true,
             }
         },
-    	{
+        {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [6, -17],
+                "coordinates": [-185, -259],
             },
             "properties": {
                 "isOrigin": false,
-                "isDestination": false,
-                "hasPublicDisplay": true,
+                "isDestination": true,
+                "hasPublicDisplay": false,
             }
         },
-    	{
+        {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [27, -17],
+                "coordinates": [-253, -214],
             },
             "properties": {
-                "isOrigin": true,
-                "isDestination": false,
+                "isOrigin": false,
+                "isDestination": true,
+                "hasPublicDisplay": false,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-241, -128],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": true,
                 "hasPublicDisplay": false,
             }
         },

@@ -149,6 +149,30 @@ to set-environment
   let dim-x 20
   let dim-y 20
 
+  if not file-exists? word resource-path "config.csv" [
+    error word "Scenario configuration file " word resource-path "config.csv is missing"
+  ]
+
+  if show-logs? [
+    print word "Loading scenario settings from " word resource-path "config.csv"
+  ]
+
+  file-open word resource-path "config.csv"
+
+  while [not file-at-end?] [
+    let arguments (csv:from-row file-read-line "=")
+
+    ifelse length arguments = 2 [
+      run (word "set " item 0 arguments word " " item 1 arguments)
+    ] [
+      if show-logs? [
+        print "Skipped invalid or empty line in config.csv"
+      ]
+    ]
+  ]
+
+  file-close
+
   if scenario = "hospital" [
     set dim-x 1098 / 2.8
     set dim-y 1100 / 2.8
@@ -159,7 +183,7 @@ to set-environment
     set dim-y 934 / 3
   ]
 
-  if scenario = "testing-environment-1" or scenario = "testing-environment-2" [
+  if scenario = "testing-environment-1" or scenario = "testing-environment-2" or scenario = "testing-environment-2" [
     set dim-x 20
     set dim-y 20
   ]
@@ -1029,8 +1053,8 @@ end
 GRAPHICS-WINDOW
 380
 10
-1178
-809
+1191
+822
 -1
 -1
 20.0
@@ -1404,7 +1428,7 @@ SLIDER
 area-of-awareness
 area-of-awareness
 0
-50
+100
 20.0
 1
 1
@@ -1451,8 +1475,8 @@ CHOOSER
 117
 scenario
 scenario
-"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5"
-3
+"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6"
+2
 
 SWITCH
 8
@@ -1712,7 +1736,7 @@ mean-visiting-time
 mean-visiting-time
 0
 100
-50.0
+100.0
 1
 1
 NIL
