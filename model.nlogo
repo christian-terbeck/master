@@ -1029,11 +1029,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1172
-803
+1178
+809
 -1
 -1
-1.0200364298724953
+20.0
 1
 10
 1
@@ -1043,10 +1043,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--392
-392
--392
-392
+-20
+20
+-20
+20
 0
 0
 1
@@ -1405,7 +1405,7 @@ area-of-awareness
 area-of-awareness
 0
 50
-50.0
+20.0
 1
 1
 NIL
@@ -1452,7 +1452,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5"
-0
+3
 
 SWITCH
 8
