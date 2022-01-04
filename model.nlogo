@@ -5,10 +5,9 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
-; - Fix and finish testing environments
+; - Fix and finish environments (Finalize UKM tower and include elevators and add directed links)
 ; - Fix bugs (issue with wall colors (pcolor) when calculating social force and drawing areas of awareness; contact stamps)
 ; - think of an idea to implement neighborhoods (moore and van neumann!!!)
-; - Finalize UKM tower and include elevators and add directed links
 ; - light and dark mode
 ; - write short descriptions for every scenario
 
@@ -595,7 +594,7 @@ to update-path [k n]
         face cur-node
 
         if show-areas-of-awareness? [
-          ask patches in-cone area-of-awareness angle-of-awareness with [not (pcolor = black)] [
+          ask patches in-cone area-of-awareness angle-of-awareness with [pcolor > 8.5] [
             set pcolor yellow
           ]
         ]
@@ -917,7 +916,7 @@ to move [k]
 
   ;Todo: work on social force when it comes to black patches - maybe just prevent walking on black patches
 
-  ask patches in-radius (D) with [pcolor = black] [
+  ask patches in-radius (D) with [pcolor < 1.5] [
     set repx repx + (A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))) / 5
     set repy repy + (A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))) / 5
   ]
@@ -1049,11 +1048,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1193
-824
+1189
+822
 -1
 -1
-20.0
+1.0928961748633879
 1
 10
 1
@@ -1063,10 +1062,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--20
-20
--20
-20
+-366
+366
+-367
+367
 0
 0
 1
@@ -1472,7 +1471,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6"
-3
+7
 
 SWITCH
 8
@@ -1487,9 +1486,9 @@ write-output?
 
 INPUTBOX
 10
-724
-186
-784
+725
+184
+785
 stop-at-ticks
 1000000.0
 1
@@ -1518,7 +1517,7 @@ SWITCH
 359
 show-areas-of-awareness?
 show-areas-of-awareness?
-1
+0
 1
 -1000
 
