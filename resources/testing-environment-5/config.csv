@@ -1,6 +1,2 @@
 dim-x 40
 dim-y 40
-area-of-awareness 20
-angle-of-awareness 30
-use-stop-feature? true
-use-static-signage? false

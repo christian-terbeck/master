@@ -8,9 +8,9 @@
 ; - Fix and finish testing environments
 ; - Fix bugs (issue with wall colors (pcolor) when calculating social force and drawing areas of awareness; contact stamps)
 ; - think of an idea to implement neighborhoods (moore and van neumann!!!)
-; - Finalize UKM tower and include elevators
+; - Finalize UKM tower and include elevators and add directed links
 ; - light and dark mode
-; - use directed links between nodes? - this really causes some issues: e.g. only directed or undirected links possible - no mix allowed..?
+; - write short descriptions for every scenario
 
 extensions [csv gis]
 
@@ -18,6 +18,7 @@ globals [
   interface-width
   dim-x
   dim-y
+  use-directed-links?
   resource-path
   output-path
   output-ticks
@@ -148,8 +149,6 @@ to set-environment
   no-display
 
   set interface-width 80
-  ;let dim-x 20
-  ;let dim-y 20
 
   if not file-exists? word resource-path "config.csv" [
     error word "Scenario configuration file " word resource-path "config.csv is missing"
@@ -214,9 +213,16 @@ to create-circle
     set color lput 20 extract-rgb color
     __set-line-thickness 0.5
 
-    create-link-with myself [
-      tie
-      hide-link
+    ifelse use-directed-links? [
+      create-link-from myself [
+        tie
+        hide-link
+      ]
+    ] [
+      create-link-with myself [
+        tie
+        hide-link
+      ]
     ]
   ]
 end
@@ -292,6 +298,8 @@ to set-nodes
     error "At least one origin and one destination node have to be defined."
   ]
 
+  set use-directed-links? false
+
   if not file-exists? word resource-path "node-links.csv" [
     error word "The required file " word resource-path "node-links.csv is missing."
   ]
@@ -307,6 +315,10 @@ to set-nodes
 
     ifelse length arguments = 3 [
       link-nodes item 0 arguments item 1 arguments item 2 arguments
+
+      if not use-directed-links? and not item 2 arguments [
+        set use-directed-links? true
+      ]
     ] [
       if show-logs? [
         print "Skipped invalid or empty line in node-links.csv"
@@ -412,7 +424,7 @@ to init-ped [k]
   init-paths self origin destination
   update-path self origin
 
-  if show-circles? and scenario != "testing-environment-2" [
+  if show-circles? [
     create-circle
   ]
 
@@ -588,7 +600,7 @@ to update-path [k n]
           ]
         ]
 
-        set tmp-detected-people count peds in-cone area-of-awareness angle-of-awareness with [not (self = k)]
+        set tmp-detected-people count peds in-cone area-of-awareness angle-of-awareness with [not (self = k) and not (hidden?)]
 
         if detected-people = -1 or (detected-people > 0 and tmp-detected-people < detected-people) [
           set detected-people tmp-detected-people
@@ -770,6 +782,10 @@ to hide-me [k]
   ask in-link-neighbors [
     hide-turtle
   ]
+
+  ask out-link-neighbors [
+    hide-turtle
+  ]
 end
 
 ; @method show-me
@@ -780,6 +796,10 @@ to show-me [k]
   show-turtle
 
   ask in-link-neighbors [
+    show-turtle
+  ]
+
+  ask out-link-neighbors [
     show-turtle
   ]
 end
@@ -932,6 +952,10 @@ to move [k]
           die
         ]
 
+        ask out-link-neighbors [
+          hide-turtle
+        ]
+
         die
       ]
     ] [
@@ -1025,8 +1049,8 @@ end
 GRAPHICS-WINDOW
 380
 10
-1190
-821
+1193
+824
 -1
 -1
 20.0
@@ -1448,7 +1472,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6"
-4
+3
 
 SWITCH
 8
@@ -1494,7 +1518,7 @@ SWITCH
 359
 show-areas-of-awareness?
 show-areas-of-awareness?
-0
+1
 1
 -1000
 
