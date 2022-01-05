@@ -1046,11 +1046,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1196
-827
+1188
+819
 -1
 -1
-10.0
+1.0
 1
 10
 1
@@ -1060,10 +1060,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--40
-40
--40
-40
+-400
+400
+-400
+400
 0
 0
 1
@@ -1079,7 +1079,7 @@ initial-number-of-people
 initial-number-of-people
 0
 50
-1.0
+0.0
 1
 1
 NIL
@@ -1469,7 +1469,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6"
-6
+0
 
 SWITCH
 8
@@ -1611,7 +1611,7 @@ SWITCH
 323
 use-stop-feature?
 use-stop-feature?
-0
+1
 1
 -1000
 
