@@ -5,7 +5,8 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
-; - Fix and finish environments (Finalize UKM tower and include elevators and add directed links)
+; - Further improve model runtime (if path from B to A is already discovered and path from A to B is needed, just load file and inverse the paths and write to new file!)
+; - Fix and finish environments (Finalize UKM tower and include elevators and add directed links - one way in towers)
 ; - Fix bugs (issue with wall colors (pcolor) when calculating social force and drawing areas of awareness; contact stamps)
 ; - think of an idea to implement neighborhoods (moore and/or van neumann!!!)
 
@@ -15,7 +16,6 @@ globals [
   interface-width
   dim-x
   dim-y
-  use-directed-links?
   resource-path
   output-path
   output-ticks
@@ -210,16 +210,9 @@ to create-circle
     set color lput 20 extract-rgb color
     __set-line-thickness 0.5
 
-    ifelse use-directed-links? [
-      create-link-from myself [
-        tie
-        hide-link
-      ]
-    ] [
-      create-link-with myself [
-        tie
-        hide-link
-      ]
+    create-link-from myself [
+      tie
+      hide-link
     ]
   ]
 end
@@ -295,8 +288,6 @@ to set-nodes
     error "At least one origin and one destination node have to be defined."
   ]
 
-  set use-directed-links? false
-
   if not file-exists? word resource-path "node-links.csv" [
     error word "The required file " word resource-path "node-links.csv is missing."
   ]
@@ -312,10 +303,6 @@ to set-nodes
 
     ifelse length arguments = 3 [
       link-nodes item 0 arguments item 1 arguments item 2 arguments
-
-      if not use-directed-links? and not item 2 arguments [
-        set use-directed-links? true
-      ]
     ] [
       if show-logs? [
         print "Skipped invalid or empty line in node-links.csv"
@@ -455,18 +442,20 @@ end
 
 to link-nodes [id1 id2 is-two-way?]
   ask node id1 [
-    ifelse is-two-way? [
-      create-link-with node id2 [
-        if [level] of node id1 != [level] of node id2 [
-          set color green
-        ]
-
-        if not show-paths? [
-          hide-link
-        ]
+    create-link-to node id2 [
+      if [level] of node id1 != [level] of node id2 [
+        set color green
       ]
-    ] [
-      create-link-to node id2 [
+
+      if not show-paths? [
+        hide-link
+      ]
+    ]
+  ]
+
+  if is-two-way? [
+    ask node id2 [
+      create-link-to node id1 [
         if [level] of node id1 != [level] of node id2 [
           set color green
         ]
@@ -1046,8 +1035,8 @@ end
 GRAPHICS-WINDOW
 380
 10
-1188
-819
+1172
+803
 -1
 -1
 1.0
@@ -1079,7 +1068,7 @@ initial-number-of-people
 initial-number-of-people
 0
 50
-0.0
+1.0
 1
 1
 NIL
@@ -1611,7 +1600,7 @@ SWITCH
 323
 use-stop-feature?
 use-stop-feature?
-1
+0
 1
 -1000
 
