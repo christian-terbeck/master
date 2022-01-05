@@ -132,10 +132,6 @@ end
 ; @description Observe a random agent
 
 to observe-agent
-  if not (subject = nobody) and not is-ped? subject [
-    reset-perspective
-  ]
-
   ifelse subject = nobody [
     if count peds > 0 [
       ride one-of peds
@@ -149,7 +145,7 @@ end
 ; @description Observe a random display
 
 to observe-display
-  if not (subject = nobody) and not is-node? subject [
+  if not is-node? subject and [
     reset-perspective
   ]
 
