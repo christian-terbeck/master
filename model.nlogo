@@ -5,12 +5,14 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
+; - distinguish between staff members and visitors by is-staff? in addition to familiarity as this is misleading!!! familiarity could be an additional attribute but restriction to paths applies to familiar visitors as well.
+; - how to use familiarity rate now? are visitors not forced to follow signs? probably only forced to stop.
 ; - Fix and finish environments (Finalize UKM tower and include elevators and add directed links - one way in towers)
 ; - Fix bugs (e.g. contact stamps)
 ; - think of an idea to implement neighborhoods (moore and/or van neumann!!!)
-; - maybe only force non-familiar people to stick to one-ways
-; - private zone for staff members where visitors cannot walk
-; -investigate why people moved to different level instead of being teleported
+; - maybe only force non-staff people to stick to one-ways?
+; - investigate why people moved to different level instead of being teleported
+; - when doing airport: use patch color of transport bands to increase agent speed, draw paths along them to make movement possible there
 
 extensions [csv gis]
 
@@ -25,6 +27,7 @@ globals [
   output-critical-contacts
   output-unique-contacts
   total-number-of-people
+  total-number-of-staff-members
   total-number-of-familiar-people
   time
   level-switching-duration
@@ -41,6 +44,7 @@ peds-own [
   is-initialized?
   speedx
   speedy
+  is-staff?
   is-familiar?
   is-visiting?
   has-visited?
@@ -73,6 +77,10 @@ nodes-own [
 ]
 
 breed [circles circle]
+
+links-own [
+  is-restricted?
+]
 
 ; @method setup
 ; @description Performs the necessary steps to run the simulation
@@ -337,8 +345,8 @@ to set-nodes
   while [not file-at-end?] [
     let arguments (csv:from-row file-read-line " ")
 
-    ifelse length arguments = 3 [
-      link-nodes item 0 arguments item 1 arguments item 2 arguments
+    ifelse length arguments = 4 [
+      link-nodes item 0 arguments item 1 arguments item 2 arguments item 3 arguments
     ] [
       if show-logs? [
         print "Skipped invalid or empty line in node-links.csv"
@@ -383,8 +391,15 @@ to set-agents
     create-ped
   ]
 
-  ask n-of round (familiarity-rate * total-number-of-people) peds [
+  ask n-of round (staff-rate * total-number-of-people) peds [
+    set is-staff? true
     make-familiar self
+  ]
+
+  if count peds with [(not is-staff?)] > 0 [
+    ask n-of round (familiarity-rate * total-number-of-people) peds with [(not is-staff?)] [
+      make-familiar self
+    ]
   ]
 
   ask peds [
@@ -419,6 +434,7 @@ to create-ped
     set xcor x + random-normal 0 0.2
     set ycor y + random-normal 0 0.2
     set is-initialized? false
+    set is-staff? false
     set is-familiar? false
     set is-visiting? true ;Todo: check this feature: does this only apply to the hospital scenario?
     set visiting-time mean-visiting-time + random-normal 0 0.2
@@ -455,16 +471,26 @@ to init-ped [k]
   set is-initialized? true
 end
 
+; @method make-staff-member
+; @description "Make the ped" a staff member
+
+to make-staff-member [k]
+  set is-staff? true
+
+  if scenario != "airport" [
+    set shape "person doctor"
+  ]
+
+  make-familiar k
+
+  set total-number-of-staff-members total-number-of-staff-members + 1
+end
+
 ; @method make-familiar
 ; @description "Make the ped familiar" with the building
 
 to make-familiar [k]
   set is-familiar? true
-
-  if scenario = "hospital" or scenario = "testing-environment-5" [
-    set shape "person doctor"
-  ]
-
   set color blue
 
   set total-number-of-familiar-people total-number-of-familiar-people + 1
@@ -476,11 +502,18 @@ end
 ; @param int id2
 ; @param bool is-two-way?
 
-to link-nodes [id1 id2 is-two-way?]
+to link-nodes [id1 id2 is-two-way? is-staff-only?]
   ask node id1 [
     create-link-to node id2 [
       if [level] of node id1 != [level] of node id2 [
         set color green
+      ]
+
+      ifelse is-staff-only? [
+        set is-restricted? true
+        set color red
+      ] [
+        set is-restricted? false
       ]
 
       if not show-paths? [
@@ -494,6 +527,13 @@ to link-nodes [id1 id2 is-two-way?]
       create-link-to node id1 [
         if [level] of node id1 != [level] of node id2 [
           set color green
+        ]
+
+        ifelse is-staff-only? [
+          set is-restricted? true
+          set color red
+        ] [
+          set is-restricted? false
         ]
 
         if not show-paths? [
@@ -519,7 +559,13 @@ to init-paths [k node1 node2]
   set paths []
   set current-path []
 
-  let path-file word resource-path word "paths/" word [who] of node1 word "-" word [who] of node2 ".csv"
+  let path-file word resource-path word "paths/" word [who] of node1 word "-" word [who] of node2 "-a.csv"
+  let path-file-2 word resource-path word "paths/" word [who] of node2 word "-" word [who] of node1 "-a.csv"
+
+  if not is-staff? [
+    set path-file word resource-path word "paths/" word [who] of node1 word "-" word [who] of node2 "-r.csv"
+    set path-file-2 word resource-path word "paths/" word [who] of node2 word "-" word [who] of node1 "-r.csv"
+  ]
 
   ifelse file-exists? path-file [
     file-open path-file
@@ -544,8 +590,6 @@ to init-paths [k node1 node2]
       print word "Loaded paths from cached file " path-file
     ]
   ] [
-    let path-file-2 word resource-path word "paths/" word [who] of node2 word "-" word [who] of node1 ".csv"
-
     ifelse file-exists? path-file-2 [
       file-open path-file-2
       let tmp-nodes []
@@ -611,7 +655,8 @@ to update-path [k n]
     set number-of-peds-waiting peds-waiting-here
   ]
 
-  ifelse not use-static-signage? and not is-familiar? and current-node-has-display? [
+  ;ifelse not use-static-signage? and not is-familiar? and current-node-has-display? [
+  ifelse not use-static-signage? and not is-staff? and current-node-has-display? [
     let available-paths paths
 
     let adjacent-nodes []
@@ -732,14 +777,28 @@ to set-paths [k origin-nodes]
   let destination-node destination
 
   foreach origin-nodes [i ->
-    let reachable-nodes [out-link-neighbors] of last i
+    let out-links [my-out-links] of last i
 
-    ask reachable-nodes [
+    if not is-staff? [
+      set out-links [my-out-links with [not is-restricted?]] of last i
+    ]
+
+    let reachable-nodes []
+
+    ask out-links [
+      ask both-ends [
+        if [who] of self != [who] of last i [
+          set reachable-nodes lput self reachable-nodes
+        ]
+      ]
+    ]
+
+    foreach reachable-nodes [j ->
       let new-route i
-      set new-route lput self new-route
+      set new-route lput j new-route
 
-      if not member? self i [
-        ifelse self = destination-node [
+      if not member? j i [
+        ifelse j = destination-node [
           ask k [
             set paths lput new-route paths
           ]
@@ -1063,8 +1122,12 @@ to simulate
     create-ped
 
     ask peds with [not (is-initialized?)] [
-      if familiarity-rate > 0 and ((total-number-of-familiar-people > 0 and total-number-of-familiar-people / total-number-of-people < familiarity-rate) or total-number-of-familiar-people < 1) [
-        make-familiar self
+      ifelse staff-rate > 0 and ((total-number-of-staff-members > 0 and total-number-of-staff-members / total-number-of-people < staff-rate) or total-number-of-staff-members < 1) [
+        make-staff-member self
+      ] [
+        if familiarity-rate > 0 and ((total-number-of-familiar-people > 0 and total-number-of-familiar-people / total-number-of-people < familiarity-rate) or total-number-of-familiar-people < 1) [
+          make-familiar self
+        ]
       ]
 
       init-ped self
@@ -1133,7 +1196,7 @@ initial-number-of-people
 initial-number-of-people
 0
 50
-1.0
+0.0
 1
 1
 NIL
@@ -1289,14 +1352,14 @@ HORIZONTAL
 
 SLIDER
 187
-120
+156
 363
-153
+189
 familiarity-rate
 familiarity-rate
 0
 1
-0.0
+0.6
 .05
 1
 NIL
@@ -1522,8 +1585,8 @@ CHOOSER
 117
 scenario
 scenario
-"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7"
-8
+"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8"
+0
 
 SWITCH
 8
@@ -1665,7 +1728,7 @@ SWITCH
 323
 use-stop-feature?
 use-stop-feature?
-0
+1
 1
 -1000
 
@@ -1723,10 +1786,10 @@ Helper functions
 1
 
 SLIDER
-8
-155
-184
-188
+187
+120
+363
+153
 spawn-rate
 spawn-rate
 0
@@ -1738,10 +1801,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-8
-189
-184
-222
+9
+192
+182
+225
 max-capacity
 max-capacity
 0
@@ -1776,9 +1839,9 @@ total-number-of-people
 
 SLIDER
 187
-155
-363
-188
+192
+364
+225
 mean-visiting-time
 mean-visiting-time
 0
@@ -1840,6 +1903,21 @@ NIL
 NIL
 1
 
+SLIDER
+9
+156
+182
+189
+staff-rate
+staff-rate
+0
+1
+0.5
+0.01
+1
+NIL
+HORIZONTAL
+
 @#$#@#$#@
 ## WHAT IS IT?
 
@@ -1862,8 +1940,10 @@ Testing Environment 1 - Basic Grid
 Testing Environment 2 - Basic Grid with one way system
 Testing Environment 3 - Basic Grid with mixture of one ways and regular paths
 Testing Environment 4 - More complex single level floor
-Testing Environment 5 - Multilevel building with 4 floors and a single stairway
-Testing Environment 6 - UKM single level
+Testing Environment 5 - More complex single level floor with restricted areas
+Testing Environment 6 - Multilevel building with 4 floors and a single stairway
+Testing Environment 7 - UKM single level
+Testing Environment 8 - UKM multi level
 
 ## THINGS TO NOTICE
 
