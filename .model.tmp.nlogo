@@ -9,8 +9,7 @@
 ; - Fix bugs (e.g. contact stamps)
 ; - think of an idea to implement neighborhoods (moore and/or van neumann!!!)
 ; - maybe only force non-familiar people to stick to one-ways
-; - private zone for staff members where visitors cannot walk
-; -investigate why people moved to different level instead of being teleported
+;
 
 extensions [csv gis]
 
