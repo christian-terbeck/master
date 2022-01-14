@@ -37,6 +37,7 @@ globals [
   critical-contacts
   contact-distance-values
   contact-distance
+  scenario-has-one-way-paths?
 ]
 
 breed [peds ped]
@@ -265,6 +266,8 @@ end
 ; @description Loads the nodes and their links from external sources and adds them to the world
 
 to set-nodes
+  set scenario-has-one-way-paths? false
+
   if not file-exists? word resource-path "nodes.json" [
     error word "The required file " word resource-path "nodes.json is missing."
   ]
@@ -347,6 +350,10 @@ to set-nodes
 
     ifelse length arguments = 4 [
       link-nodes item 0 arguments item 1 arguments item 2 arguments item 3 arguments
+
+      if not item 2 arguments and not scenario-has-one-way-paths? [
+        set scenario-has-one-way-paths? true
+      ]
     ] [
       if show-logs? [
         print "Skipped invalid or empty line in node-links.csv"
@@ -590,7 +597,7 @@ to init-paths [k node1 node2]
       print word "Loaded paths from cached file " path-file
     ]
   ] [
-    ifelse file-exists? path-file-2 [
+    ifelse file-exists? path-file-2 and not scenario-has-one-way-paths? [
       file-open path-file-2
       let tmp-nodes []
       let tmp-path []
@@ -1163,11 +1170,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1193
-560
+1175
+806
 -1
 -1
-13.333333333333334
+20.0
 1
 10
 1
@@ -1177,8 +1184,8 @@ GRAPHICS-WINDOW
 0
 0
 1
--30
-30
+-20
+20
 -20
 20
 0
@@ -1359,7 +1366,7 @@ familiarity-rate
 familiarity-rate
 0
 1
-0.6
+0.0
 .05
 1
 NIL
@@ -1539,7 +1546,7 @@ area-of-awareness
 area-of-awareness
 0
 100
-50.0
+10.0
 1
 1
 NIL
@@ -1552,7 +1559,7 @@ SWITCH
 584
 show-paths?
 show-paths?
-0
+1
 1
 -1000
 
@@ -1585,8 +1592,8 @@ CHOOSER
 117
 scenario
 scenario
-"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8"
-5
+"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8" "testing-environment-9"
+2
 
 SWITCH
 8
@@ -1619,7 +1626,7 @@ angle-of-awareness
 angle-of-awareness
 0
 90
-35.0
+25.0
 1
 1
 NIL
@@ -1632,7 +1639,7 @@ SWITCH
 359
 show-areas-of-awareness?
 show-areas-of-awareness?
-1
+0
 1
 -1000
 
@@ -1728,7 +1735,7 @@ SWITCH
 323
 use-stop-feature?
 use-stop-feature?
-1
+0
 1
 -1000
 
@@ -1809,7 +1816,7 @@ max-capacity
 max-capacity
 0
 100
-5.0
+10.0
 1
 1
 NIL
@@ -1845,8 +1852,8 @@ SLIDER
 mean-visiting-time
 mean-visiting-time
 0
-100
-100.0
+500
+200.0
 1
 1
 NIL
@@ -1912,7 +1919,7 @@ staff-rate
 staff-rate
 0
 1
-0.5
+0.0
 0.01
 1
 NIL
@@ -1943,7 +1950,8 @@ Testing Environment 4 - More complex single level floor
 Testing Environment 5 - More complex single level floor with restricted areas
 Testing Environment 6 - Multilevel building with 4 floors and a single stairway
 Testing Environment 7 - UKM single level
-Testing Environment 8 - UKM multi level
+Testing Environment 8 - UKM single level with restricted staff area and one way areas
+Testing Environment 9 - UKM multi level
 
 ## THINGS TO NOTICE
 
