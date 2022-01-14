@@ -1163,11 +1163,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1188
-819
+1193
+560
 -1
 -1
-1.0
+13.333333333333334
 1
 10
 1
@@ -1177,10 +1177,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--400
-400
--400
-400
+-30
+30
+-20
+20
 0
 0
 1
@@ -1526,7 +1526,7 @@ SWITCH
 657
 show-labels?
 show-labels?
-0
+1
 1
 -1000
 
@@ -1586,7 +1586,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8"
-0
+5
 
 SWITCH
 8
