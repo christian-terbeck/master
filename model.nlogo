@@ -9,7 +9,6 @@
 ; - how to use familiarity rate now? are visitors not forced to follow signs? probably only forced to stop.
 ; - Fix and finish environments (Finalize UKM tower and include elevators and add directed links - one way in towers)
 ; - Fix bugs (e.g. contact stamps)
-; - think of an idea to implement neighborhoods (moore and/or van neumann!!!)
 ; - maybe only force non-staff people to stick to one-ways?
 ; - investigate why people moved to different level instead of being teleported
 ; - when doing airport: use patch color of transport bands to increase agent speed, draw paths along them to make movement possible there
@@ -1170,8 +1169,8 @@ end
 GRAPHICS-WINDOW
 380
 10
-1187
-432
+1585
+642
 -1
 -1
 0.6644518272425249
