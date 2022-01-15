@@ -1170,11 +1170,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1175
-806
+1188
+432
 -1
 -1
-20.0
+0.6644518272425249
 1
 10
 1
@@ -1184,10 +1184,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--20
-20
--20
-20
+-602
+602
+-311
+311
 0
 0
 1
@@ -1244,9 +1244,9 @@ NIL
 1
 
 SLIDER
-1402
+1383
 452
-1577
+1558
 485
 V0
 V0
@@ -1259,9 +1259,9 @@ NIL
 HORIZONTAL
 
 MONITOR
-1490
+1471
 10
-1579
+1560
 55
 Time
 time
@@ -1270,9 +1270,9 @@ time
 11
 
 MONITOR
-1424
+1405
 10
-1485
+1466
 55
 Density
 count peds / world-width / world-height
@@ -1281,9 +1281,9 @@ count peds / world-width / world-height
 11
 
 SLIDER
-1224
+1205
 452
-1399
+1380
 485
 dt
 dt
@@ -1296,9 +1296,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-1402
+1383
 488
-1577
+1558
 521
 D
 D
@@ -1328,9 +1328,9 @@ NIL
 1
 
 SLIDER
-1225
+1206
 488
-1399
+1380
 521
 A
 A
@@ -1343,9 +1343,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-1225
+1206
 524
-1400
+1381
 557
 Tr
 Tr
@@ -1429,9 +1429,9 @@ NIL
 HORIZONTAL
 
 MONITOR
-1224
+1205
 58
-1399
+1380
 103
 Number of contacts
 overall-contacts / 2
@@ -1440,9 +1440,9 @@ overall-contacts / 2
 11
 
 MONITOR
-1404
+1385
 58
-1580
+1561
 103
 Avg. number of contacts per person
 overall-contacts / 2 / total-number-of-people
@@ -1451,9 +1451,9 @@ overall-contacts / 2 / total-number-of-people
 11
 
 MONITOR
-1224
+1205
 106
-1400
+1381
 151
 Unique contacts
 unique-contacts / 2
@@ -1462,9 +1462,9 @@ unique-contacts / 2
 11
 
 MONITOR
-1404
+1385
 106
-1580
+1561
 151
 Critical contacts
 critical-contacts / 2
@@ -1473,9 +1473,9 @@ critical-contacts / 2
 11
 
 MONITOR
-1224
+1205
 154
-1401
+1382
 199
 Avg. contact duration
 overall-contact-time / overall-contacts
@@ -1484,9 +1484,9 @@ overall-contact-time / overall-contacts
 11
 
 MONITOR
-1405
+1386
 154
-1580
+1561
 199
 Avg. contact distance
 contact-distance / contact-distance-values
@@ -1495,9 +1495,9 @@ contact-distance / contact-distance-values
 11
 
 PLOT
-1225
+1206
 205
-1581
+1562
 418
 Contacts
 ticks
@@ -1546,7 +1546,7 @@ area-of-awareness
 area-of-awareness
 0
 100
-10.0
+40.0
 1
 1
 NIL
@@ -1593,7 +1593,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8" "testing-environment-9"
-2
+1
 
 SWITCH
 8
@@ -1626,7 +1626,7 @@ angle-of-awareness
 angle-of-awareness
 0
 90
-25.0
+20.0
 1
 1
 NIL
@@ -1719,9 +1719,9 @@ Additional options
 1
 
 TEXTBOX
-1227
+1208
 435
-1522
+1503
 463
 Speed and Social Force (maybe just remove from interface)
 11
@@ -1823,9 +1823,9 @@ NIL
 HORIZONTAL
 
 MONITOR
-1224
+1205
 10
-1322
+1303
 55
 Current visitors
 count peds
@@ -1834,9 +1834,9 @@ count peds
 11
 
 MONITOR
-1326
+1307
 10
-1420
+1401
 55
 Visitors in total
 total-number-of-people
