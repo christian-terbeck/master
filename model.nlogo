@@ -5,6 +5,8 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
+; - average contact duration must be calculated as seconds
+; - spatial scale
 ; - distinguish between staff members and visitors by is-staff? in addition to familiarity as this is misleading!!! familiarity could be an additional attribute but restriction to paths applies to familiar visitors as well.
 ; - how to use familiarity rate now? are visitors not forced to follow signs? probably only forced to stop.
 ; - Fix and finish environments (Finalize UKM tower and include elevators and add directed links - one way in towers)
@@ -1373,7 +1375,7 @@ familiarity-rate
 familiarity-rate
 0
 1
-1.0
+0.0
 .05
 1
 NIL

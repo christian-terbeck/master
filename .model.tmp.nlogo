@@ -5,6 +5,7 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
+
 ; - distinguish between staff members and visitors by is-staff? in addition to familiarity as this is misleading!!! familiarity could be an additional attribute but restriction to paths applies to familiar visitors as well.
 ; - how to use familiarity rate now? are visitors not forced to follow signs? probably only forced to stop.
 ; - Fix and finish environments (Finalize UKM tower and include elevators and add directed links - one way in towers)
@@ -1095,12 +1096,13 @@ to move [k]
           show-me self
         ]
       ] [
-
-        ifelse not is-familiar? [
-          set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
-          update-path self next-node
-        ] [
-          set next-node item pos current-path
+        if has-moved? [
+          ifelse not is-familiar? [
+            set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
+            update-path self next-node
+          ] [
+            set next-node item pos current-path
+          ]
         ]
       ]
     ]
@@ -1552,7 +1554,7 @@ area-of-awareness
 area-of-awareness
 0
 100
-40.0
+50.0
 1
 1
 NIL
@@ -1632,7 +1634,7 @@ angle-of-awareness
 angle-of-awareness
 0
 90
-20.0
+10.0
 1
 1
 NIL
@@ -1822,7 +1824,7 @@ max-capacity
 max-capacity
 0
 100
-10.0
+15.0
 1
 1
 NIL
