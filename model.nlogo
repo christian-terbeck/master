@@ -195,7 +195,7 @@ end
 to set-environment
   no-display
 
-  set interface-width 60
+  set interface-width 80
 
   if not file-exists? word resource-path "config.csv" [
     error word "Scenario configuration file " word resource-path "config.csv is missing"
@@ -1183,11 +1183,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1196
-827
+1189
+820
 -1
 -1
-15.0
+1.0
 1
 10
 1
@@ -1197,10 +1197,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--20
-20
--20
-20
+-400
+400
+-400
+400
 0
 0
 1
@@ -1606,7 +1606,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8" "testing-environment-9"
-3
+0
 
 SWITCH
 8
@@ -1652,7 +1652,7 @@ SWITCH
 359
 show-areas-of-awareness?
 show-areas-of-awareness?
-1
+0
 1
 -1000
 
@@ -1814,7 +1814,7 @@ spawn-rate
 spawn-rate
 0
 100
-0.0
+50.0
 1
 1
 NIL
@@ -1829,7 +1829,7 @@ max-capacity
 max-capacity
 0
 100
-51.0
+12.0
 1
 1
 NIL
@@ -1932,7 +1932,7 @@ staff-rate
 staff-rate
 0
 1
-0.19
+0.2
 0.01
 1
 NIL
