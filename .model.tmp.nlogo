@@ -1095,13 +1095,12 @@ to move [k]
           show-me self
         ]
       ] [
-        if has-moved? [
-          ifelse not is-familiar? [
-            set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
-            update-path self next-node
-          ] [
-            set next-node item pos current-path
-          ]
+
+        ifelse not is-familiar? [
+          set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
+          update-path self next-node
+        ] [
+          set next-node item pos current-path
         ]
       ]
     ]
@@ -1373,7 +1372,7 @@ familiarity-rate
 familiarity-rate
 0
 1
-1.0
+0.0
 .05
 1
 NIL
@@ -1553,7 +1552,7 @@ area-of-awareness
 area-of-awareness
 0
 100
-50.0
+40.0
 1
 1
 NIL
@@ -1633,7 +1632,7 @@ angle-of-awareness
 angle-of-awareness
 0
 90
-10.0
+20.0
 1
 1
 NIL
@@ -1823,7 +1822,7 @@ max-capacity
 max-capacity
 0
 100
-15.0
+10.0
 1
 1
 NIL
