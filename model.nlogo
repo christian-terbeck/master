@@ -5,7 +5,11 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
-; - average contact duration must be calculated as seconds
+; - average contact duration must be calculated as seconds!
+; - individual waiting time for each agent (random value near mean value)
+; - staff should not leave building! always next destination!!!
+; - staff should be there at the very beginning of the simulation on setup - staff does not start at building entrance
+; - individual waiting tolerance per agent!
 ; - spatial scale
 ; - distinguish between staff members and visitors by is-staff? in addition to familiarity as this is misleading!!! familiarity could be an additional attribute but restriction to paths applies to familiar visitors as well.
 ; - how to use familiarity rate now? are visitors not forced to follow signs? probably only forced to stop.
@@ -1179,11 +1183,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1269
-900
+1196
+827
 -1
 -1
-0.75
+15.0
 1
 10
 1
@@ -1193,10 +1197,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--400
-400
--400
-400
+-20
+20
+-20
+20
 0
 0
 1
@@ -1212,7 +1216,7 @@ initial-number-of-people
 initial-number-of-people
 0
 50
-0.0
+1.0
 1
 1
 NIL
@@ -1531,7 +1535,7 @@ SWITCH
 456
 show-circles?
 show-circles?
-0
+1
 1
 -1000
 
@@ -1602,7 +1606,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8" "testing-environment-9"
-0
+3
 
 SWITCH
 8
@@ -1621,7 +1625,7 @@ INPUTBOX
 360
 785
 stop-at-ticks
-1000000.0
+30000.0
 1
 0
 Number
@@ -1635,7 +1639,7 @@ angle-of-awareness
 angle-of-awareness
 0
 90
-10.0
+20.0
 1
 1
 NIL
@@ -1660,8 +1664,8 @@ SLIDER
 output-steps
 output-steps
 10
-500
-100.0
+1000
+1000.0
 10
 1
 NIL
@@ -1810,7 +1814,7 @@ spawn-rate
 spawn-rate
 0
 100
-20.0
+0.0
 1
 1
 NIL
@@ -1825,7 +1829,7 @@ max-capacity
 max-capacity
 0
 100
-15.0
+51.0
 1
 1
 NIL
@@ -1928,7 +1932,7 @@ staff-rate
 staff-rate
 0
 1
-0.0
+0.19
 0.01
 1
 NIL
