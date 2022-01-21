@@ -1257,10 +1257,10 @@ NIL
 1
 
 SLIDER
-1468
-452
-1643
-485
+1469
+453
+1644
+486
 V0
 V0
 0
@@ -1294,10 +1294,10 @@ count peds / world-width / world-height
 11
 
 SLIDER
-1290
-452
-1465
-485
+1291
+453
+1466
+486
 dt
 dt
 0
@@ -1309,10 +1309,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-1468
-488
-1643
-521
+1469
+489
+1644
+522
 D
 D
 0.1
@@ -1341,10 +1341,10 @@ NIL
 1
 
 SLIDER
-1291
-488
-1465
-521
+1292
+489
+1466
+522
 A
 A
 0
@@ -1356,10 +1356,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-1291
-524
-1466
-557
+1292
+525
+1467
+558
 Tr
 Tr
 .1
@@ -1732,10 +1732,10 @@ Additional options
 1
 
 TEXTBOX
-1293
-435
-1588
-463
+1294
+436
+1589
+464
 Speed and Social Force (maybe just remove from interface)
 11
 0.0
