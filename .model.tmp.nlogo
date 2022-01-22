@@ -5,8 +5,7 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
-; - function that staff can switch levels
-; - ...
+
 ; - adjust public display logic so that also the sensors of nearby displays are taken into account!
 ; - average contact duration must be calculated as seconds!
 ; - individual waiting time for each agent (random value near mean value)
