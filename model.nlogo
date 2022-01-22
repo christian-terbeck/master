@@ -5,15 +5,17 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
+; - as time is the time in seconds, this helps to define visiting minutes and waiting tolerance as well as level switching duration (currently its too fast)!
+; -> solve temporal scale end then also the spatial scale (contact radius in m and area of awareness etc.; store floorplan scale in config file for every scenario!)
+; - fix single and multi-level UKM floorplans
 ; - function that staff can switch levels
-; - ...
+; - distinguish between contacts between visitors and contacts where staff members are involved!!!
 ; - adjust public display logic so that also the sensors of nearby displays are taken into account!
 ; - average contact duration must be calculated as seconds!
 ; - individual waiting time for each agent (random value near mean value)
 ; - staff should not leave building! always next destination!!! -> on their level only!
 ; - staff should be there at the very beginning of the simulation on setup - staff does not start at building entrance!
 ; - individual waiting tolerance per agent!
-; - spatial scale
 ; - distinguish between staff members and visitors by is-staff? in addition to familiarity as this is misleading!!! familiarity could be an additional attribute but restriction to paths applies to familiar visitors as well.
 ; - how to use familiarity rate now? are visitors not forced to follow signs? probably only forced to stop.
 ; - Fix and finish environments (Finalize UKM tower and INCLUDE elevators and add directed links - one way in towers)
@@ -33,10 +35,10 @@ globals [
   output-contacts
   output-critical-contacts
   output-unique-contacts
-  total-number-of-people
-  total-number-of-staff-members
+  total-number-of-visitors
   total-number-of-familiar-people
   time
+  levels
   level-switching-duration
   overall-contacts
   overall-contact-time
@@ -234,6 +236,7 @@ to set-environment
   let field-size interface-width / (dim-x / 5)
   set-patch-size field-size
 
+  set levels []
   set level-switching-duration 15
 
   gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
@@ -298,6 +301,10 @@ to set-nodes
 
     if not show-paths? [
       set hidden? true
+    ]
+
+    if not member? level levels [
+      set levels lput level levels
     ]
   ]
 
@@ -407,14 +414,20 @@ end
 ; @description Sets the agents/peds of the model
 
 to set-agents
-  repeat initial-number-of-people [
-    create-ped
+  if staff-members-per-level > 0 [
+    repeat staff-members-per-level [
+      foreach levels [x ->
+        create-ped true true x
+      ]
+    ]
   ]
 
-  error "Todo: create staff members here for each level!"
+  repeat initial-number-of-people [
+    create-ped false false -1
+  ]
 
   if count peds with [(not is-staff?)] > 0 [
-    ask n-of round (familiarity-rate * total-number-of-people) peds with [(not is-staff?)] [
+    ask n-of round (familiarity-rate * total-number-of-visitors) peds with [(not is-staff?)] [
       make-familiar self
     ]
   ]
@@ -425,22 +438,44 @@ to set-agents
 end
 
 ; @method create-ped
+; @param bool is-staff?
+; @param int level
 ; @description Creates a new ped and sets its attributes
 
-to create-ped
+to create-ped [is-familiar-with-building? is-staff-member? level-number]
   let x 0
   let y 0
   let tmp-first-node nobody
 
-  ask one-of nodes with [is-origin?] [
-    set x pxcor
-    set y pycor
-    set tmp-first-node self
+  ifelse level-number > -1 [
+    ask one-of nodes with [level = level-number and is-destination?] [
+      set x pxcor
+      set y pycor
+      set tmp-first-node self
+    ]
+  ] [
+    ask one-of nodes with [is-origin?] [
+      set x pxcor
+      set y pycor
+      set tmp-first-node self
+    ]
   ]
 
   create-peds 1 [
-    set shape "person"
-    set color cyan
+    set is-staff? is-staff-member?
+
+    ifelse is-staff-member? [
+      if scenario != "airport" [
+        set shape "person doctor"
+      ]
+
+      set color white
+      set is-familiar? true
+    ] [
+      set shape "person"
+      set color cyan
+      set is-familiar? is-familiar-with-building?
+    ]
 
     ifelse patch-size < 10 [
       set size 10 / patch-size
@@ -452,8 +487,6 @@ to create-ped
     set ycor y + random-normal 0 0.2
     set is-initialized? false
     set has-moved? false
-    set is-staff? false
-    set is-familiar? false
     set is-visiting? true
     set visiting-time mean-visiting-time + random-normal 0 5
 
@@ -474,8 +507,13 @@ to create-ped
     ]
 
     set origin tmp-first-node
-    set destination one-of nodes with [is-destination? and not (self = tmp-first-node)]
     set current-level [level] of tmp-first-node
+
+    ifelse is-staff? and not staff-switches-levels? [
+      set destination one-of nodes with [is-destination? and not (self = tmp-first-node) and (level = [level] of tmp-first-node)]
+    ] [
+      set destination one-of nodes with [is-destination? and not (self = tmp-first-node)]
+    ]
 
     set had-contact-with []
     set active-contacts []
@@ -483,7 +521,7 @@ to create-ped
     set label-color black
   ]
 
-  set total-number-of-people total-number-of-people + 1
+  set total-number-of-visitors total-number-of-visitors + 1
 end
 
 ; @method init-ped
@@ -502,20 +540,6 @@ to init-ped [k]
   ]
 
   set is-initialized? true
-end
-
-; @method make-staff-member
-; @description "Make the ped" a staff member
-
-to make-staff-member [k]
-  set is-staff? true
-  set is-familiar? true
-
-  if scenario != "airport" [
-    set shape "person doctor"
-  ]
-
-  set total-number-of-staff-members total-number-of-staff-members + 1
 end
 
 ; @method make-familiar
@@ -1159,10 +1183,10 @@ to simulate
   ]
 
   if spawn-rate > 0 and ticks > 0 and ticks mod spawn-rate = 0 and count peds < max-capacity [
-    create-ped
+    create-ped false false -1
 
     ask peds with [not (is-initialized?)] [
-      if familiarity-rate > 0 and ((total-number-of-familiar-people > 0 and total-number-of-familiar-people / total-number-of-people < familiarity-rate) or total-number-of-familiar-people < 1) [
+      if familiarity-rate > 0 and ((total-number-of-familiar-people > 0 and total-number-of-familiar-people / total-number-of-visitors < familiarity-rate) or total-number-of-familiar-people < 1) [
         make-familiar self
       ]
 
@@ -1232,7 +1256,7 @@ initial-number-of-people
 initial-number-of-people
 0
 50
-1.0
+0.0
 1
 1
 NIL
@@ -1288,7 +1312,7 @@ NIL
 HORIZONTAL
 
 MONITOR
-1556
+1590
 10
 1645
 55
@@ -1299,9 +1323,9 @@ time
 11
 
 MONITOR
-1490
+1535
 10
-1551
+1586
 55
 Density
 count peds / world-width / world-height
@@ -1403,9 +1427,9 @@ HORIZONTAL
 
 SWITCH
 11
-623
+658
 185
-656
+691
 show-logs?
 show-logs?
 1
@@ -1414,39 +1438,39 @@ show-logs?
 
 SLIDER
 11
-421
+456
 183
-454
+489
 contact-radius
 contact-radius
 0
-10
-3.5
+3
+1.5
 0.1
 1
-NIL
+meters
 HORIZONTAL
 
 SLIDER
 186
-421
-358
-454
+456
+359
+489
 critical-period
 critical-period
+0
+15
+15.0
 1
-120
-50.0
 1
-1
-NIL
+minutes
 HORIZONTAL
 
 SLIDER
 11
-457
+492
 183
-490
+525
 contact-tolerance
 contact-tolerance
 0
@@ -1454,7 +1478,7 @@ contact-tolerance
 5.0
 1
 1
-NIL
+ticks
 HORIZONTAL
 
 MONITOR
@@ -1474,7 +1498,7 @@ MONITOR
 1646
 103
 Avg. number of contacts per person
-overall-contacts / 2 / total-number-of-people
+overall-contacts / 2 / (total-number-of-visitors + count peds with [is-staff?])
 3
 1
 11
@@ -1546,9 +1570,9 @@ PENS
 
 SWITCH
 186
-458
+493
 358
-491
+526
 show-circles?
 show-circles?
 1
@@ -1557,9 +1581,9 @@ show-circles?
 
 SWITCH
 11
-659
+694
 186
-692
+727
 show-labels?
 show-labels?
 1
@@ -1567,25 +1591,25 @@ show-labels?
 -1000
 
 SLIDER
-188
-289
-360
-322
+11
+325
+184
+358
 area-of-awareness
 area-of-awareness
-0
-100
-50.0
 1
+50
+10.0
+0.5
 1
-NIL
+meters
 HORIZONTAL
 
 SWITCH
 10
-586
+621
 184
-619
+654
 show-paths?
 show-paths?
 1
@@ -1594,9 +1618,9 @@ show-paths?
 
 SWITCH
 187
-586
+621
 363
-619
+654
 show-walking-paths?
 show-walking-paths?
 1
@@ -1605,9 +1629,9 @@ show-walking-paths?
 
 SWITCH
 187
-624
+659
 363
-657
+692
 show-contacts?
 show-contacts?
 1
@@ -1626,9 +1650,9 @@ scenario
 
 SWITCH
 10
-521
+556
 184
-554
+589
 write-output?
 write-output?
 0
@@ -1637,9 +1661,9 @@ write-output?
 
 INPUTBOX
 189
-760
+795
 362
-820
+855
 stop-at-ticks
 30000.0
 1
@@ -1647,25 +1671,25 @@ stop-at-ticks
 Number
 
 SLIDER
-10
-289
-185
-322
+188
+325
+362
+358
 angle-of-awareness
 angle-of-awareness
 0
 90
-20.0
+19.0
 1
 1
-NIL
+degrees
 HORIZONTAL
 
 SWITCH
 11
-361
+396
 183
-394
+429
 show-areas-of-awareness?
 show-areas-of-awareness?
 0
@@ -1674,9 +1698,9 @@ show-areas-of-awareness?
 
 SLIDER
 187
-521
+556
 359
-554
+589
 output-steps
 output-steps
 10
@@ -1709,9 +1733,9 @@ Main setup
 
 TEXTBOX
 12
-505
+540
 162
-523
+558
 Output generation
 11
 0.0
@@ -1719,9 +1743,9 @@ Output generation
 
 TEXTBOX
 12
-272
+307
 162
-290
+325
 Public Display settings
 11
 0.0
@@ -1729,9 +1753,9 @@ Public Display settings
 
 TEXTBOX
 12
-405
+440
 162
-423
+458
 Contact settings
 11
 0.0
@@ -1739,9 +1763,9 @@ Contact settings
 
 TEXTBOX
 11
-568
+603
 161
-586
+621
 Additional options
 11
 0.0
@@ -1759,9 +1783,9 @@ Speed and Social Force (maybe just remove from interface)
 
 SWITCH
 11
-325
+360
 184
-358
+393
 use-stop-feature?
 use-stop-feature?
 0
@@ -1770,9 +1794,9 @@ use-stop-feature?
 
 SWITCH
 188
+396
 361
-361
-394
+429
 use-static-signage?
 use-static-signage?
 1
@@ -1781,9 +1805,9 @@ use-static-signage?
 
 SLIDER
 188
-325
+360
 361
-358
+393
 mean-waiting-tolerance
 mean-waiting-tolerance
 0
@@ -1796,9 +1820,9 @@ HORIZONTAL
 
 BUTTON
 12
-724
+759
 187
-757
+792
 NIL
 show-coordinate
 T
@@ -1813,9 +1837,9 @@ NIL
 
 TEXTBOX
 15
-707
+742
 165
-725
+760
 Helper functions
 11
 0.0
@@ -1829,18 +1853,18 @@ SLIDER
 spawn-rate
 spawn-rate
 0
-100
-50.0
+1000
+180.0
 1
 1
-NIL
+seconds
 HORIZONTAL
 
 SLIDER
-9
-228
-182
-261
+187
+120
+363
+153
 max-capacity
 max-capacity
 0
@@ -1852,23 +1876,23 @@ visitors
 HORIZONTAL
 
 MONITOR
-1290
+1363
 10
-1388
+1448
 55
 Current visitors
-count peds
+count peds with [not (is-staff?)]
 0
 1
 11
 
 MONITOR
-1392
+1450
 10
-1486
+1531
 55
 Visitors in total
-total-number-of-people
+total-number-of-visitors
 0
 1
 11
@@ -1876,7 +1900,7 @@ total-number-of-people
 SLIDER
 9
 192
-182
+184
 225
 mean-visiting-time
 mean-visiting-time
@@ -1890,9 +1914,9 @@ HORIZONTAL
 
 BUTTON
 189
-724
+759
 362
-757
+792
 Restore scenario defaults
 restore-default-settings
 NIL
@@ -1907,9 +1931,9 @@ NIL
 
 BUTTON
 13
-760
+795
 187
-793
+828
 Start/stop observe agent
 observe-agent
 NIL
@@ -1924,9 +1948,9 @@ NIL
 
 BUTTON
 13
-796
+831
 187
-829
+864
 Start/stop observe display
 observe-display
 NIL
@@ -1940,15 +1964,15 @@ NIL
 1
 
 SLIDER
-187
-121
-363
-154
+9
+227
+183
+260
 staff-members-per-level
 staff-members-per-level
 0
 10
-4.0
+1.0
 1
 1
 NIL
@@ -1963,11 +1987,48 @@ max-visiting-time
 max-visiting-time
 5
 100
-50.0
+30.0
 1
 1
 minutes
 HORIZONTAL
+
+SWITCH
+187
+227
+363
+260
+staff-switches-levels?
+staff-switches-levels?
+1
+1
+-1000
+
+SLIDER
+9
+262
+184
+295
+mean-treatment-time
+mean-treatment-time
+0
+30
+5.0
+1
+1
+minutes
+HORIZONTAL
+
+MONITOR
+1290
+10
+1361
+55
+Employees
+count peds with [is-staff?]
+0
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
