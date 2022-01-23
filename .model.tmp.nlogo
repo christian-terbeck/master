@@ -22,6 +22,8 @@
 ; - Fix bugs (e.g. contact stamps -> also show in Thesis where the contacts occur; for discussion etc.
 ; - maybe only force non-staff people to stick to one-ways?
 ; - when doing airport: use patch color of transport bands to increase agent speed, draw paths along them to make movement possible there
+; - https://docs.ropensci.org/nlrx/reference/nlrx-package.html - NetLogo NLRX Package to easily run model from Rstudio and have results plotted!
+; - enhance runtime optimization section in theses (prevent unnecessary levelk switches: see hospital as segments)
 
 extensions [csv gis]
 
@@ -47,6 +49,7 @@ globals [
   contact-distance-values
   contact-distance
   scenario-has-one-way-paths?
+  prevent-unnecessary-level-switches?
 ]
 
 breed [peds ped]
@@ -59,7 +62,10 @@ peds-own [
   is-familiar?
   is-visiting?
   has-visited?
+  visit-start
   visiting-time
+  treatment-start
+  treatment-time
   is-waiting?
   waiting-time
   waiting-tolerance
@@ -205,7 +211,7 @@ end
 to set-environment
   no-display
 
-  set interface-width 80
+  set interface-width 90
 
   if not file-exists? word resource-path "config.csv" [
     error word "Scenario configuration file " word resource-path "config.csv is missing"
@@ -283,6 +289,7 @@ end
 
 to set-nodes
   set scenario-has-one-way-paths? false
+  set prevent-unnecessary-level-switches? true
 
   if not file-exists? word resource-path "nodes.json" [
     error word "The required file " word resource-path "nodes.json is missing."
@@ -487,15 +494,29 @@ to create-ped [is-familiar-with-building? is-staff-member? level-number]
     set ycor y + random-normal 0 0.2
     set is-initialized? false
     set has-moved? false
-    set is-visiting? true
-    set visiting-time mean-visiting-time + random-normal 0 5
 
-    if visiting-time > max-visiting-time [
-      set visiting-time max-visiting-time
-    ]
+    ifelse not is-staff-member? and scenario != "airport" [
+      set is-visiting? true
+      set visiting-time mean-visiting-time + random-normal 0 5
 
-    if visiting-time < 5 [
-      set visiting-time 5
+      if visiting-time > max-visiting-time [
+        set visiting-time max-visiting-time
+      ]
+
+      if visiting-time < 5 [
+        set visiting-time 5
+      ]
+
+      set visiting-time visiting-time * 60
+    ] [
+      set is-visiting? false
+      set treatment-time mean-treatment-time + random-normal 0 3
+
+      if treatment-time < 5 [
+        set treatment-time 5
+      ]
+
+      set treatment-time treatment-time * 60
     ]
 
     set has-visited? false
@@ -521,7 +542,9 @@ to create-ped [is-familiar-with-building? is-staff-member? level-number]
     set label-color black
   ]
 
-  set total-number-of-visitors total-number-of-visitors + 1
+  if not is-staff-member? [
+    set total-number-of-visitors total-number-of-visitors + 1
+  ]
 end
 
 ; @method init-ped
@@ -672,6 +695,10 @@ to init-paths [k node1 node2]
 
       csv:to-file path-file (path-ids)
     ] [
+      if show-logs? [
+        print word "Route from " word node1 word " to " word node2 " could not be created from cache. Starting to detect paths now."
+      ]
+
       set-paths self (list (list node1))
       sort-paths self
 
@@ -830,6 +857,7 @@ end
 
 to set-paths [k origin-nodes]
   let new-origin-nodes origin-nodes
+  let origin-node origin
   let destination-node destination
 
   foreach origin-nodes [i ->
@@ -844,7 +872,9 @@ to set-paths [k origin-nodes]
     ask out-links [
       ask both-ends [
         if [who] of self != [who] of last i [
-          set reachable-nodes lput self reachable-nodes
+          if not prevent-unnecessary-level-switches? or (prevent-unnecessary-level-switches? and [level] of self = [level] of destination-node) [
+            set reachable-nodes lput self reachable-nodes
+          ]
         ]
       ]
     ]
@@ -1097,39 +1127,85 @@ to move [k]
     ]
 
     ifelse distance destination < D / 2 [
-      if show-logs? [
-        print word self " has reached its destination"
-      ]
+      ifelse is-staff? [
+        if not hidden? [
+            hide-me self
 
-      ifelse is-visiting? and not has-visited? [
-        ifelse visiting-time > 0 [
+            if show-logs? [
+              print word self " has started patient treatment"
+            ]
+          ]
+
+          ifelse treatment-start = 0 [
+            set treatment-start time
+          ] [
+            if treatment-time - (time - treatment-start) < 0 [
+              if show-logs? [
+                print word self word " has ended the patient treatment after " word round treatment-time " seconds"
+              ]
+
+              set treatment-start 0
+              set treatment-time mean-treatment-time + random-normal 0 3
+
+              if treatment-time <  [
+                set treatment-time 5
+              ]
+
+              set treatment-time treatment-time * 60
+
+              let cur-destination destination
+              let new-destination one-of nodes with [is-destination? and not (self = cur-destination) and (level = [level] of cur-destination)]
+              init-paths self destination new-destination
+              update-path self origin
+
+              show-me self
+            ]
+          ]
+      ] [
+        ifelse is-visiting? and not has-visited? [
           if not hidden? [
             hide-me self
-          ]
-          error "Todo: calculate visiting time as seconds"
-          set visiting-time visiting-time - 1
-        ] [
-          init-paths self destination origin
-          update-path self origin
 
-          set has-visited? true
-          show-me self
-        ]
-      ] [
-        ask in-link-neighbors [
+            if show-logs? [
+              print word self " has started its visit"
+            ]
+          ]
+
+          ifelse visit-start = 0 [
+            set visit-start time
+          ] [
+            if visiting-time - (time - visit-start) < 0 [
+              if show-logs? [
+                print word self word " has ended their visit after " word round visiting-time " seconds"
+              ]
+
+              init-paths self destination origin
+              update-path self origin
+
+              set has-visited? true
+              show-me self
+            ]
+          ]
+        ] [
+          if show-logs? [
+            print word self " has reached its final destination and was removed from the simulation"
+          ]
+
+          ask in-link-neighbors [
+            die
+          ]
+
+          ask out-link-neighbors [
+            hide-turtle
+          ]
+
           die
         ]
-
-        ask out-link-neighbors [
-          hide-turtle
-        ]
-
-        die
       ]
     ] [
       let pos (position next-node current-path) + 1
 
-      ifelse [level] of item pos current-path != current-level [
+      ifelse length current-path > pos and [level] of item pos current-path != current-level [
         ifelse level-switching-time < level-switching-duration [
           if not hidden? [
             hide-me self
@@ -1223,11 +1299,11 @@ end
 GRAPHICS-WINDOW
 380
 10
-1189
-820
+1289
+920
 -1
 -1
-1.0
+1.125
 1
 10
 1
@@ -1297,9 +1373,9 @@ NIL
 1
 
 SLIDER
-1469
+1478
 453
-1644
+1653
 486
 V0
 V0
@@ -1312,20 +1388,20 @@ NIL
 HORIZONTAL
 
 MONITOR
-1590
+1599
 10
-1645
+1654
 55
 Time
 time
-17
+0
 1
 11
 
 MONITOR
-1535
+1544
 10
-1586
+1595
 55
 Density
 count peds / world-width / world-height
@@ -1334,9 +1410,9 @@ count peds / world-width / world-height
 11
 
 SLIDER
-1291
+1300
 453
-1466
+1475
 486
 dt
 dt
@@ -1349,9 +1425,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-1469
+1478
 489
-1644
+1653
 522
 D
 D
@@ -1381,9 +1457,9 @@ NIL
 1
 
 SLIDER
-1292
+1301
 489
-1466
+1475
 522
 A
 A
@@ -1396,9 +1472,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-1292
+1301
 525
-1467
+1476
 558
 Tr
 Tr
@@ -1432,7 +1508,7 @@ SWITCH
 691
 show-logs?
 show-logs?
-1
+0
 1
 -1000
 
@@ -1482,9 +1558,9 @@ ticks
 HORIZONTAL
 
 MONITOR
-1290
+1299
 58
-1465
+1474
 103
 Number of contacts
 overall-contacts / 2
@@ -1493,9 +1569,9 @@ overall-contacts / 2
 11
 
 MONITOR
-1470
+1479
 58
-1646
+1655
 103
 Avg. number of contacts per person
 overall-contacts / 2 / (total-number-of-visitors + count peds with [is-staff?])
@@ -1504,9 +1580,9 @@ overall-contacts / 2 / (total-number-of-visitors + count peds with [is-staff?])
 11
 
 MONITOR
-1290
+1299
 106
-1466
+1475
 151
 Unique contacts
 unique-contacts / 2
@@ -1515,9 +1591,9 @@ unique-contacts / 2
 11
 
 MONITOR
-1470
+1479
 106
-1646
+1655
 151
 Critical contacts
 critical-contacts / 2
@@ -1526,9 +1602,9 @@ critical-contacts / 2
 11
 
 MONITOR
-1290
+1299
 154
-1467
+1476
 199
 Avg. contact duration
 overall-contact-time / overall-contacts
@@ -1537,9 +1613,9 @@ overall-contact-time / overall-contacts
 11
 
 MONITOR
-1471
+1480
 154
-1646
+1655
 199
 Avg. contact distance
 contact-distance / contact-distance-values
@@ -1548,9 +1624,9 @@ contact-distance / contact-distance-values
 11
 
 PLOT
-1291
+1300
 205
-1647
+1656
 418
 Contacts
 ticks
@@ -1665,7 +1741,7 @@ INPUTBOX
 362
 855
 stop-at-ticks
-30000.0
+0.0
 1
 0
 Number
@@ -1692,7 +1768,7 @@ SWITCH
 429
 show-areas-of-awareness?
 show-areas-of-awareness?
-0
+1
 1
 -1000
 
@@ -1772,9 +1848,9 @@ Additional options
 1
 
 TEXTBOX
-1294
+1303
 436
-1589
+1598
 464
 Speed and Social Force (maybe just remove from interface)
 11
@@ -1854,7 +1930,7 @@ spawn-rate
 spawn-rate
 0
 1000
-180.0
+0.0
 1
 1
 seconds
@@ -1876,9 +1952,9 @@ visitors
 HORIZONTAL
 
 MONITOR
-1363
+1372
 10
-1448
+1457
 55
 Current visitors
 count peds with [not (is-staff?)]
@@ -1887,9 +1963,9 @@ count peds with [not (is-staff?)]
 11
 
 MONITOR
-1450
+1459
 10
-1531
+1540
 55
 Visitors in total
 total-number-of-visitors
@@ -1972,7 +2048,7 @@ staff-members-per-level
 staff-members-per-level
 0
 10
-1.0
+2.0
 1
 1
 NIL
@@ -2020,9 +2096,9 @@ minutes
 HORIZONTAL
 
 MONITOR
-1290
+1299
 10
-1361
+1370
 55
 Employees
 count peds with [is-staff?]
