@@ -24,6 +24,7 @@
 ; - when doing airport: use patch color of transport bands to increase agent speed, draw paths along them to make movement possible there
 ; - https://docs.ropensci.org/nlrx/reference/nlrx-package.html - NetLogo NLRX Package to easily run model from Rstudio and have results plotted!
 ; - enhance runtime optimization section in theses (prevent unnecessary levelk switches: see hospital as segments)
+; - contact distance in meters!
 
 extensions [csv gis]
 
@@ -244,7 +245,7 @@ to set-environment
   set-patch-size field-size
 
   set levels []
-  set level-switching-duration 15
+  set level-switching-duration 50
 
   gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
 
@@ -1009,18 +1010,13 @@ to trace-contacts
     let has-contact-to []
 
     ask peds in-radius contact-radius with [not (self = myself) and not (hidden?)] [
-      ifelse not member? [who] of myself active-contacts [
+      if not member? [who] of myself active-contacts [
         set active-contacts lput [who] of myself active-contacts
-        set active-contacts-periods lput 1 active-contacts-periods
+        set active-contacts-periods lput time active-contacts-periods
 
         if show-logs? [
           print word self word " started contact with " myself
         ]
-      ] [
-        let pos position [who] of myself active-contacts
-        let counter-value item pos active-contacts-periods
-        set counter-value counter-value + 1
-        set active-contacts-periods replace-item pos active-contacts-periods counter-value
       ]
 
       set has-contact-to lput [who] of self has-contact-to
@@ -1032,13 +1028,14 @@ to trace-contacts
     foreach active-contacts [x ->
       if not member? x has-contact-to [
         let pos position x active-contacts
-        let counter-value item pos active-contacts-periods
+        let contact-start item pos active-contacts-periods
+        let contact-duration time - contact-start
 
         set active-contacts remove-item pos active-contacts
         set active-contacts-periods remove-item pos active-contacts-periods
 
-        ifelse counter-value > contact-tolerance [
-          set overall-contact-time overall-contact-time + counter-value
+        ifelse contact-duration > contact-tolerance [
+          set overall-contact-time overall-contact-time + contact-duration
           set number-of-contacts number-of-contacts + 1
           set overall-contacts overall-contacts + 1
 
@@ -1051,8 +1048,8 @@ to trace-contacts
               if member? [who] of myself active-contacts [
                 let pos2 position [who] of myself active-contacts
 
-                if item pos2 active-contacts-periods != counter-value [
-                  set active-contacts-periods replace-item pos2 active-contacts-periods counter-value
+                if item pos2 active-contacts-periods != contact-start [
+                  set active-contacts-periods replace-item pos2 active-contacts-periods contact-start
                 ]
               ]
             ]
@@ -1065,16 +1062,16 @@ to trace-contacts
             ]
           ]
 
-          if counter-value >= critical-period [
+          if contact-duration >= (critical-period * 60) [
             set critical-contacts critical-contacts + 1
           ]
 
           if show-logs? [
-            print word self word " lost contact to Person " word x word " after " word counter-value " ticks"
+            print word self word " lost contact to Person " word x word " after " word contact-duration " seconds"
           ]
         ] [
           if show-logs? [
-            print word "Contact between " word self word " and Person " word x word " with a duration of " word counter-value " ticks will not be considered due to its short duration"
+            print word "Contact between " word self word " and Person " word x word " with a duration of " word contact-duration " seconds will not be considered due to its short duration"
           ]
         ]
       ]
@@ -1334,7 +1331,7 @@ initial-number-of-visitors
 initial-number-of-visitors
 0
 50
-1.0
+0.0
 1
 1
 NIL
@@ -1497,7 +1494,7 @@ familiarity-rate
 familiarity-rate
 0
 1
-1.0
+0.0
 .05
 1
 NIL
@@ -1510,7 +1507,7 @@ SWITCH
 691
 show-logs?
 show-logs?
-1
+0
 1
 -1000
 
@@ -1553,10 +1550,10 @@ contact-tolerance
 contact-tolerance
 0
 10
-5.0
+1.0
 1
 1
-ticks
+seconds
 HORIZONTAL
 
 MONITOR
@@ -1647,7 +1644,7 @@ PENS
 "unique-contacts" 1.0 0 -955883 true "" "plot (unique-contacts / 2)"
 
 SWITCH
-186
+187
 493
 358
 526
@@ -1757,7 +1754,7 @@ angle-of-awareness
 angle-of-awareness
 0
 90
-19.0
+20.0
 1
 1
 degrees
