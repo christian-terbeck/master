@@ -50,6 +50,7 @@ globals [
   contact-distance
   scenario-has-one-way-paths?
   prevent-unnecessary-level-switches?
+  last-spawn
 ]
 
 breed [peds ped]
@@ -429,7 +430,7 @@ to set-agents
     ]
   ]
 
-  repeat initial-number-of-people [
+  repeat initial-number-of-visitors [
     create-ped false false -1
   ]
 
@@ -872,7 +873,7 @@ to set-paths [k origin-nodes]
     ask out-links [
       ask both-ends [
         if [who] of self != [who] of last i [
-          if not prevent-unnecessary-level-switches? or (prevent-unnecessary-level-switches? and [level] of self = [level] of destination-node) [
+          if not prevent-unnecessary-level-switches? or ([level] of origin-node != [level] of destination-node) or (prevent-unnecessary-level-switches? and [level] of origin-node = [level] of destination-node and [level] of self = [level] of destination-node) [
             set reachable-nodes lput self reachable-nodes
           ]
         ]
@@ -1258,7 +1259,8 @@ to simulate
     ]
   ]
 
-  if spawn-rate > 0 and ticks > 0 and ticks mod spawn-rate = 0 and count peds < max-capacity [
+  if spawn-rate > 0 and ticks > 0 and (time - last-spawn) > spawn-rate and count peds < max-capacity [
+    set last-spawn time
     create-ped false false -1
 
     ask peds with [not (is-initialized?)] [
@@ -1326,13 +1328,13 @@ Ticks
 SLIDER
 8
 120
-183
+185
 153
-initial-number-of-people
-initial-number-of-people
+initial-number-of-visitors
+initial-number-of-visitors
 0
 50
-0.0
+1.0
 1
 1
 NIL
@@ -1495,7 +1497,7 @@ familiarity-rate
 familiarity-rate
 0
 1
-0.0
+1.0
 .05
 1
 NIL
@@ -1508,7 +1510,7 @@ SWITCH
 691
 show-logs?
 show-logs?
-0
+1
 1
 -1000
 
@@ -1930,7 +1932,7 @@ spawn-rate
 spawn-rate
 0
 1000
-0.0
+90.0
 1
 1
 seconds
@@ -1945,7 +1947,7 @@ max-capacity
 max-capacity
 0
 100
-12.0
+80.0
 1
 1
 visitors
@@ -2048,7 +2050,7 @@ staff-members-per-level
 staff-members-per-level
 0
 10
-2.0
+4.0
 1
 1
 NIL
