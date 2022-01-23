@@ -5,31 +5,19 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
-; - as time is the time in seconds, this helps to define visiting minutes and waiting tolerance as well as level switching duration (currently its too fast)!
-; -> solve temporal scale end then also the spatial scale (contact radius in m and area of awareness etc.; store floorplan scale in config file for every scenario!)
-; - fix single and multi-level UKM floorplans
-; - function that staff can switch levels
 ; - distinguish between contacts between visitors and contacts where staff members are involved!!!
-; - adjust public display logic so that also the sensors of nearby displays are taken into account!
-; - average contact duration must be calculated as seconds!
-; - individual waiting time for each agent (random value near mean value)
-; - staff should not leave building! always next destination!!! -> on their level only!
-; - staff should be there at the very beginning of the simulation on setup - staff does not start at building entrance!
-; - individual waiting tolerance per agent!
-; - distinguish between staff members and visitors by is-staff? in addition to familiarity as this is misleading!!! familiarity could be an additional attribute but restriction to paths applies to familiar visitors as well.
-; - how to use familiarity rate now? are visitors not forced to follow signs? probably only forced to stop.
-; - Fix and finish environments (Finalize UKM tower and INCLUDE elevators and add directed links - one way in towers)
+; - Fix and finish environments (Finalize UKM tower and INCLUDE elevators
 ; - Fix bugs (e.g. contact stamps -> also show in Thesis where the contacts occur; for discussion etc.
 ; - maybe only force non-staff people to stick to one-ways?
 ; - when doing airport: use patch color of transport bands to increase agent speed, draw paths along them to make movement possible there
 ; - https://docs.ropensci.org/nlrx/reference/nlrx-package.html - NetLogo NLRX Package to easily run model from Rstudio and have results plotted!
-; - enhance runtime optimization section in theses (prevent unnecessary levelk switches: see hospital as segments)
-; - contact distance in meters!
+; - enhance runtime optimization section in thesis (prevent unnecessary level switches: see hospital as segments)
 
 extensions [csv gis]
 
 globals [
   interface-width
+  scale
   dim-x
   dim-y
   resource-path
@@ -245,7 +233,7 @@ to set-environment
   set-patch-size field-size
 
   set levels []
-  set level-switching-duration 50
+  set level-switching-duration 20
 
   gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
 
@@ -275,7 +263,7 @@ end
 
 to create-circle
   hatch-circles 1 [
-    set size contact-radius
+    set size (contact-radius * 2) / scale
     set color lput 20 extract-rgb color
     __set-line-thickness 0.5
 
@@ -478,7 +466,7 @@ to create-ped [is-familiar-with-building? is-staff-member? level-number]
         set shape "person doctor"
       ]
 
-      set color white
+      set color gray
       set is-familiar? true
     ] [
       set shape "person"
@@ -740,54 +728,83 @@ to update-path [k n]
     set number-of-peds-waiting peds-waiting-here
   ]
 
-  ;ifelse not use-static-signage? and not is-familiar? and current-node-has-display? [
-  ifelse not use-static-signage? and not is-staff? and current-node-has-display? [
+  ifelse not use-static-signage? and not is-familiar? and not is-staff? and current-node-has-display? [
     let available-paths paths
 
     let adjacent-nodes []
+    let adjacent-displays []
     let has-detected-current-node? false
+    let has-added-adjacent-node? false
+    let has-added-adjacent-display? false
 
     foreach available-paths [path-nodes ->
       set has-detected-current-node? false
+      set has-added-adjacent-node? false
+      set has-added-adjacent-display? false
 
       foreach path-nodes [cur-node ->
         if has-detected-current-node? [
-          if not member? cur-node adjacent-nodes [
+          if not has-added-adjacent-node? and not member? cur-node adjacent-nodes [
             set adjacent-nodes lput cur-node adjacent-nodes
+            set has-added-adjacent-node? true
           ]
 
           set has-detected-current-node? false
+        ]
+
+        if has-added-adjacent-node? and not has-added-adjacent-display? and [has-public-display?] of cur-node [
+          set adjacent-displays lput cur-node adjacent-displays
+          set has-added-adjacent-display? true
         ]
 
         if cur-node = n [
           set has-detected-current-node? true
         ]
       ]
+
+      if length adjacent-nodes > length adjacent-displays [
+        set adjacent-displays lput nobody adjacent-displays
+      ]
     ]
 
     let detected-people -1
     let tmp-detected-people 0
     let least-crowded-adjacent-node nobody
+    let loop-index 0
+    let people-at-adjacent-display 0
 
     foreach adjacent-nodes [cur-node ->
       set tmp-detected-people 0
+      set people-at-adjacent-display 0
 
       ask n [
         face cur-node
 
         if show-areas-of-awareness? [
-          ask patches in-cone area-of-awareness angle-of-awareness with [pcolor > 8.5] [
+          ask patches in-cone (area-of-awareness / scale) angle-of-awareness with [pcolor > 8.5] [
             set pcolor yellow
           ]
         ]
 
-        set tmp-detected-people count peds in-cone area-of-awareness angle-of-awareness with [not (self = k) and not (hidden?)]
+        set tmp-detected-people count peds in-cone (area-of-awareness / scale) angle-of-awareness with [not (self = k) and not (hidden?)]
+
+        if item loop-index adjacent-displays != nobody [
+          ask item loop-index adjacent-displays [
+            set people-at-adjacent-display ((count peds in-radius (area-of-awareness / scale) with [not (hidden?)] - peds-waiting-here) * 0.5) + peds-waiting-here
+          ]
+        ]
+
+        if consider-people-at-adjacent-displays? and people-at-adjacent-display > 0 [
+          set tmp-detected-people tmp-detected-people + people-at-adjacent-display
+        ]
 
         if detected-people = -1 or (detected-people > 0 and tmp-detected-people < detected-people) [
           set detected-people tmp-detected-people
           set least-crowded-adjacent-node cur-node
         ]
       ]
+
+      set loop-index loop-index + 1
     ]
 
     if use-stop-feature? [
@@ -805,11 +822,10 @@ to update-path [k n]
           ]
         ]
 
-        set waiting-time waiting-time + 1
+        set waiting-time precision (waiting-time + dt) 5
       ] [
         if is-waiting? [
           set is-waiting? false
-          set waiting-time 0
           set color cyan
 
           ask n [
@@ -848,6 +864,14 @@ to update-path [k n]
   ]
 
   if not is-waiting? [
+    if waiting-time > 0 [
+      set waiting-time precision (waiting-time - dt) 5
+
+      if waiting-time < 0 [
+        set waiting-time 0
+      ]
+    ]
+
     set next-node item 1 current-path
   ]
 end
@@ -1009,7 +1033,7 @@ to trace-contacts
   ask peds with [not (hidden?)] [
     let has-contact-to []
 
-    ask peds in-radius contact-radius with [not (self = myself) and not (hidden?)] [
+    ask peds in-radius (contact-radius / scale) with [not (self = myself) and not (hidden?)] [
       if not member? [who] of myself active-contacts [
         set active-contacts lput [who] of myself active-contacts
         set active-contacts-periods lput time active-contacts-periods
@@ -1022,7 +1046,7 @@ to trace-contacts
       set has-contact-to lput [who] of self has-contact-to
 
       set contact-distance-values contact-distance-values + 1
-      set contact-distance contact-distance + distance myself
+      set contact-distance contact-distance + (distance myself * scale)
     ]
 
     foreach active-contacts [x ->
@@ -1040,7 +1064,7 @@ to trace-contacts
           set overall-contacts overall-contacts + 1
 
           if show-contacts? [
-            stamp ;Todo: does not work completely; both agents are creating this stamp, but one would be enough
+            stamp
           ]
 
           if not (ped x = nobody) [
@@ -1088,7 +1112,16 @@ end
 ; @param ped k
 
 to move [k]
-  let hd towards next-node
+  let hd 0
+
+  carefully [
+    set hd towards next-node
+  ] [
+    if show-logs? [
+      print word "Skipped heading calculation at " word next-node word " as " word self " seems to switch levels"
+    ]
+  ]
+
   let h hd
   let repx 0
   let repy 0
@@ -1204,19 +1237,21 @@ to move [k]
       let pos (position next-node current-path) + 1
 
       ifelse length current-path > pos and [level] of item pos current-path != current-level [
-        ifelse level-switching-time < level-switching-duration [
+        ifelse level-switching-time = 0 [
           if not hidden? [
             hide-me self
           ]
 
-          set level-switching-time level-switching-time + 1
+          set level-switching-time time
         ] [
-          set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
-          set next-node item pos current-path
-          move-to next-node
-          set current-level [level] of next-node
-          set level-switching-time 0
-          show-me self
+          if (time - level-switching-time) > level-switching-duration [
+            set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
+            set next-node item pos current-path
+            move-to next-node
+            set current-level [level] of next-node
+            set level-switching-time 0
+            show-me self
+          ]
         ]
       ] [
         if has-moved? [
@@ -1298,8 +1333,8 @@ end
 GRAPHICS-WINDOW
 380
 10
-1289
-920
+1268
+899
 -1
 -1
 1.125
@@ -1391,7 +1426,7 @@ MONITOR
 10
 1654
 55
-Time
+Time (s)
 time
 0
 1
@@ -1403,7 +1438,7 @@ MONITOR
 1595
 55
 Density
-count peds / world-width / world-height
+count peds with [not (hidden?)] / world-width / world-height
 3
 1
 11
@@ -1432,7 +1467,7 @@ D
 D
 0.1
 5
-3.3
+2.0
 .1
 1
 NIL
@@ -1464,7 +1499,7 @@ A
 A
 0
 1
-0.5
+0.3
 .1
 1
 NIL
@@ -1479,7 +1514,7 @@ Tr
 Tr
 .1
 2
-1.3
+0.7
 .1
 1
 NIL
@@ -1502,20 +1537,20 @@ HORIZONTAL
 
 SWITCH
 11
-658
+694
 185
-691
+727
 show-logs?
 show-logs?
-0
+1
 1
 -1000
 
 SLIDER
 11
-456
+492
 183
-489
+525
 contact-radius
 contact-radius
 0
@@ -1528,9 +1563,9 @@ HORIZONTAL
 
 SLIDER
 186
-456
+492
 359
-489
+525
 critical-period
 critical-period
 0
@@ -1543,9 +1578,9 @@ HORIZONTAL
 
 SLIDER
 11
-492
+528
 183
-525
+561
 contact-tolerance
 contact-tolerance
 0
@@ -1605,7 +1640,7 @@ MONITOR
 154
 1476
 199
-Avg. contact duration
+Avg. contact duration (s)
 overall-contact-time / overall-contacts
 3
 1
@@ -1616,7 +1651,7 @@ MONITOR
 154
 1655
 199
-Avg. contact distance
+Avg. contact distance (m)
 contact-distance / contact-distance-values
 3
 1
@@ -1645,20 +1680,20 @@ PENS
 
 SWITCH
 187
-493
+529
 358
-526
+562
 show-circles?
 show-circles?
-1
+0
 1
 -1000
 
 SWITCH
 11
-694
+730
 186
-727
+763
 show-labels?
 show-labels?
 1
@@ -1674,7 +1709,7 @@ area-of-awareness
 area-of-awareness
 1
 50
-10.0
+15.0
 0.5
 1
 meters
@@ -1682,9 +1717,9 @@ HORIZONTAL
 
 SWITCH
 10
-621
+657
 184
-654
+690
 show-paths?
 show-paths?
 1
@@ -1693,9 +1728,9 @@ show-paths?
 
 SWITCH
 187
-621
+657
 363
-654
+690
 show-walking-paths?
 show-walking-paths?
 1
@@ -1704,9 +1739,9 @@ show-walking-paths?
 
 SWITCH
 187
-659
+695
 363
-692
+728
 show-contacts?
 show-contacts?
 1
@@ -1725,9 +1760,9 @@ scenario
 
 SWITCH
 10
-556
+592
 184
-589
+625
 write-output?
 write-output?
 0
@@ -1736,9 +1771,9 @@ write-output?
 
 INPUTBOX
 189
-795
+831
 362
-855
+891
 stop-at-ticks
 0.0
 1
@@ -1754,7 +1789,7 @@ angle-of-awareness
 angle-of-awareness
 0
 90
-20.0
+15.0
 1
 1
 degrees
@@ -1773,9 +1808,9 @@ show-areas-of-awareness?
 
 SLIDER
 187
-556
+592
 359
-589
+625
 output-steps
 output-steps
 10
@@ -1808,9 +1843,9 @@ Main setup
 
 TEXTBOX
 12
-540
+576
 162
-558
+594
 Output generation
 11
 0.0
@@ -1828,9 +1863,9 @@ Public Display settings
 
 TEXTBOX
 12
-440
+476
 162
-458
+494
 Contact settings
 11
 0.0
@@ -1838,9 +1873,9 @@ Contact settings
 
 TEXTBOX
 11
-603
+639
 161
-621
+657
 Additional options
 11
 0.0
@@ -1880,9 +1915,9 @@ use-static-signage?
 
 SLIDER
 188
-360
 361
-393
+362
+394
 mean-waiting-tolerance
 mean-waiting-tolerance
 0
@@ -1895,9 +1930,9 @@ HORIZONTAL
 
 BUTTON
 12
-759
+795
 187
-792
+828
 NIL
 show-coordinate
 T
@@ -1912,9 +1947,9 @@ NIL
 
 TEXTBOX
 15
-742
+778
 165
-760
+796
 Helper functions
 11
 0.0
@@ -1929,7 +1964,7 @@ spawn-rate
 spawn-rate
 0
 1000
-90.0
+19.0
 1
 1
 seconds
@@ -1989,28 +2024,11 @@ HORIZONTAL
 
 BUTTON
 189
-759
+795
 362
-792
+828
 Restore scenario defaults
 restore-default-settings
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-13
-795
-187
-828
-Start/stop observe agent
-observe-agent
 NIL
 1
 T
@@ -2026,6 +2044,23 @@ BUTTON
 831
 187
 864
+Start/stop observe agent
+observe-agent
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+13
+867
+187
+900
 Start/stop observe display
 observe-display
 NIL
@@ -2104,6 +2139,17 @@ count peds with [is-staff?]
 0
 1
 11
+
+SWITCH
+11
+432
+183
+465
+consider-people-at-adjacent-displays?
+consider-people-at-adjacent-displays?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
