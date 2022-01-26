@@ -1169,7 +1169,7 @@ to move [k]
 
   ;Todo: adjust and maybe move to external report function?
   carefully [
-    ask peds in-cone (D) 120 with [not (self = myself) and is-initialized? and not (hidden?)] [
+    ask peds in-cone (D / scale) 120 with [not (self = myself) and is-initialized? and not (hidden?)] [
       ifelse distance destination < D or distance next-node < D [
         set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
         set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
@@ -1186,7 +1186,7 @@ to move [k]
 
   ;Todo: work on social force when it comes to black patches - maybe just prevent walking on black patches
 
-  ask patches in-radius (D) with [pcolor < 8] [
+  ask patches in-radius (D / scale) with [pcolor < 8] [
     set repx repx + (A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))) / 5
     set repy repy + (A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))) / 5
   ]
@@ -1404,8 +1404,8 @@ end
 GRAPHICS-WINDOW
 384
 10
-1312
-939
+1314
+941
 -1
 -1
 22.5
