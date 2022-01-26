@@ -1,0 +1,2 @@
+[run number],familiarity-rate,scenario,initial-number-of-visitors,staff-members-per-level,spawn-rate,mean-visiting-time,max-visiting-time,max-capacity,area-of-awareness,angle-of-awareness,show-areas-of-awareness?,random-seed,[step],time,overall-contacts / 2,siminputrow
+1,0.491,hospital,0,4,180,30,60,120,10,15,FALSE,2050613415,50,23,1,1

@@ -278,7 +278,7 @@ to transform-nodes
       die
     ]
 
-    gis:create-turtles-from-points-manual json-nodes nodes [["ISORIGIN" "is-origin?"] ["ISDESTINATION" "is-destination?"] ["HASPUBLICDISPLAY" "has-public-display?"]] []
+    ;gis:create-turtles-from-points-manual json-nodes nodes [["ISORIGIN" "is-origin?"] ["ISDESTINATION" "is-destination?"] ["HASPUBLICDISPLAY" "has-public-display?"]] []
 
     let nodes-data []
     let cur-node-data []
@@ -324,19 +324,19 @@ to set-nodes
   ifelse enable-gis-extension? and member? "6." netlogo-version [
     let json-nodes gis:load-dataset word resource-path "nodes.json"
 
-    gis:create-turtles-from-points-manual json-nodes nodes [["ISORIGIN" "is-origin?"] ["ISDESTINATION" "is-destination?"] ["HASPUBLICDISPLAY" "has-public-display?"]] [
-      set shape "circle"
-      set color gray
-      set label-color black
-
-      if not show-paths? [
-        set hidden? true
-      ]
-
-      if not member? level levels [
-        set levels lput level levels
-      ]
-    ]
+;    gis:create-turtles-from-points-manual json-nodes nodes [["ISORIGIN" "is-origin?"] ["ISDESTINATION" "is-destination?"] ["HASPUBLICDISPLAY" "has-public-display?"]] [
+;      set shape "circle"
+;      set color gray
+;      set label-color black
+;
+;      if not show-paths? [
+;        set hidden? true
+;      ]
+;
+;      if not member? level levels [
+;        set levels lput level levels
+;      ]
+;    ]
   ] [
     if show-logs? [
       print word "Attempting to load nodes from " word resource-path "nodes.csv as gis features are not supported."
@@ -2610,7 +2610,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.2.1
+NetLogo 6.1.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
