@@ -5,13 +5,15 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
-; - Fix public display logic (adjacent displays!)
+; - Create R-Markdown for evaluation (.Rmd)
+; - Write in Thesis about backwards compatibility (transformation function to transform data that older versions can run it to - was necessary to do analysis)
 ; - Fix and finish UKM (Finalize UKM tower and INCLUDE elevators)
 ; - Finalize airport scenario
 ; - Fix bugs (e.g. contact stamps -> also show in Thesis where the contacts occur; for discussion etc.
 ; - only force unfamiliar/non staff members to stick to one ways!!!
 ; - when doing airport: use patch color of transport bands to increase agent speed, draw paths along them to make movement possible there
 ; - https://docs.ropensci.org/nlrx/reference/nlrx-package.html - NetLogo NLRX Package to easily run model from Rstudio and have results plotted!
+; - only maybe: take care of the netlogo V6 comparison (would not work in version 7 and above)
 
 extensions [csv gis]
 
@@ -218,7 +220,9 @@ to set-environment
   set levels []
   set level-switching-duration 20
 
-  gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
+  if enable-gis-extension? and member? "6." netlogo-version [
+    gis:set-transformation (list min-pxcor max-pxcor min-pycor max-pycor) (list min-pxcor max-pxcor min-pycor max-pycor)
+  ]
 
   if not file-exists? word resource-path "floorplan.jpg" and not file-exists? word resource-path "floorplan.png" [
     error word "The required file " word resource-path "floorplan.jpg/floorplan.png is missing."
@@ -257,6 +261,51 @@ to create-circle
   ]
 end
 
+; @method transform-nodes
+; @description Transforms the geojson nodes to csv files for backwards compatibility
+
+to transform-nodes
+  ifelse member? "6." netlogo-version [
+    if not file-exists? word resource-path "nodes.json" [
+      error word "The required file " word resource-path "nodes.json is missing."
+    ]
+
+    let csv-file word resource-path "nodes.csv"
+
+    let json-nodes gis:load-dataset word resource-path "nodes.json"
+
+    ask nodes [
+      die
+    ]
+
+    gis:create-turtles-from-points-manual json-nodes nodes [["ISORIGIN" "is-origin?"] ["ISDESTINATION" "is-destination?"] ["HASPUBLICDISPLAY" "has-public-display?"]] []
+
+    let nodes-data []
+    let cur-node-data []
+
+    foreach sort nodes [cur-node ->
+      set cur-node-data []
+
+      set cur-node-data lput [xcor] of cur-node cur-node-data
+      set cur-node-data lput [ycor] of cur-node cur-node-data
+      set cur-node-data lput [is-origin?] of cur-node cur-node-data
+      set cur-node-data lput [is-destination?] of cur-node cur-node-data
+      set cur-node-data lput [has-public-display?] of cur-node cur-node-data
+      set cur-node-data lput [level] of cur-node cur-node-data
+
+      set nodes-data lput cur-node-data nodes-data
+    ]
+
+    csv:to-file csv-file (nodes-data)
+
+    if show-logs? [
+      print "Transformation complete. Please setup the model again if you would like to do a simulation."
+    ]
+  ] [
+    error "Transformation not possible (invalid NetLogo version)"
+  ]
+end
+
 ; @method set-nodes
 ; @description Loads the nodes and their links from external sources and adds them to the world
 
@@ -272,20 +321,65 @@ to set-nodes
     print word "Loading nodes from external source: " word resource-path "nodes.json"
   ]
 
-  let json-nodes gis:load-dataset word resource-path "nodes.json"
+  ifelse enable-gis-extension? and member? "6." netlogo-version [
+    let json-nodes gis:load-dataset word resource-path "nodes.json"
 
-  gis:create-turtles-from-points-manual json-nodes nodes [["ISORIGIN" "is-origin?"] ["ISDESTINATION" "is-destination?"] ["HASPUBLICDISPLAY" "has-public-display?"]] [
-    set shape "circle"
-    set color gray
-    set label-color black
+    gis:create-turtles-from-points-manual json-nodes nodes [["ISORIGIN" "is-origin?"] ["ISDESTINATION" "is-destination?"] ["HASPUBLICDISPLAY" "has-public-display?"]] [
+      set shape "circle"
+      set color gray
+      set label-color black
 
-    if not show-paths? [
-      set hidden? true
+      if not show-paths? [
+        set hidden? true
+      ]
+
+      if not member? level levels [
+        set levels lput level levels
+      ]
+    ]
+  ] [
+    if show-logs? [
+      print word "Attempting to load nodes from " word resource-path "nodes.csv as gis features are not supported."
     ]
 
-    if not member? level levels [
-      set levels lput level levels
+    if not file-exists? word resource-path "nodes.csv" [
+      error word "The required file " word resource-path "nodes.csv is missing."
     ]
+
+    file-open word resource-path "nodes.csv"
+
+    while [not file-at-end?] [
+      let arguments (csv:from-row file-read-line ",")
+
+      ifelse length arguments = 6 [
+        create-nodes 1 [
+          set xcor item 0 arguments
+          set ycor item 1 arguments
+          set is-origin? item 2 arguments
+          set is-destination? item 3 arguments
+          set has-public-display? item 4 arguments
+          set level item 5 arguments
+
+          set shape "circle"
+          set color gray
+          set label-color black
+
+          if not show-paths? [
+            set hidden? true
+          ]
+
+          if not member? level levels [
+            set levels lput level levels
+          ]
+        ]
+      ] [
+        if show-logs? [
+          print "Skipped invalid or empty line in nodes.csv"
+        ]
+      ]
+    ]
+
+    file-close
   ]
 
   ask nodes [
@@ -295,7 +389,7 @@ to set-nodes
       set size 1
     ]
 
-    ifelse is-origin? = "true" [
+    ifelse is-origin? = "true" or is-origin? = true [
       set is-origin? true
 
       set color green
@@ -303,7 +397,7 @@ to set-nodes
       set is-origin? false
     ]
 
-    ifelse is-destination? = "true" [
+    ifelse is-destination? = "true" or is-destination? = true [
       set is-destination? true
 
       set color red
@@ -311,7 +405,7 @@ to set-nodes
       set is-destination? false
     ]
 
-    ifelse has-public-display? = "true" [
+    ifelse has-public-display? = "true" or has-public-display? = true [
       set has-public-display? true
 
       set shape "computer server"
@@ -1404,11 +1498,11 @@ end
 GRAPHICS-WINDOW
 384
 10
-1314
-941
+1292
+739
 -1
 -1
-22.5
+0.9
 1
 10
 1
@@ -1418,10 +1512,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--20
-20
--20
-20
+-500
+500
+-400
+400
 0
 0
 1
@@ -1794,7 +1888,7 @@ SWITCH
 712
 show-paths?
 show-paths?
-1
+0
 1
 -1000
 
@@ -1828,13 +1922,13 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8" "testing-environment-9"
-2
+1
 
 SWITCH
-1404
-702
-1578
-735
+1405
+709
+1579
+742
 write-output?
 write-output?
 0
@@ -1879,10 +1973,10 @@ show-areas-of-awareness?
 -1000
 
 SLIDER
-1581
-702
-1753
-735
+1582
+709
+1754
+742
 output-steps
 output-steps
 10
@@ -1914,10 +2008,10 @@ Main setup
 1
 
 TEXTBOX
-1406
-686
-1556
-704
+1407
+693
+1557
+711
 Output generation
 11
 0.0
@@ -2266,6 +2360,34 @@ visitor-contacts / 2
 0
 1
 11
+
+BUTTON
+1405
+648
+1577
+681
+Transform nodes (CSV)
+transform-nodes
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SWITCH
+189
+752
+360
+785
+enable-gis-extension?
+enable-gis-extension?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
