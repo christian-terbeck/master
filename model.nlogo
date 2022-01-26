@@ -556,6 +556,8 @@ to init-ped [k]
   init-paths self origin destination
   update-path self origin
 
+  set hidden? false
+
   if show-circles? [
     create-circle
   ]
@@ -565,7 +567,6 @@ to init-ped [k]
   ]
 
   set is-initialized? true
-  set hidden? false
 end
 
 ; @method make-familiar
@@ -746,14 +747,17 @@ to update-path [k n]
 
     let adjacent-nodes []
     let adjacent-displays []
+    let nodes-before-adjacent-displays []
     let has-detected-current-node? false
     let has-added-adjacent-node? false
     let has-added-adjacent-display? false
+    let last-checked-node nobody
 
     foreach available-paths [path-nodes ->
       set has-detected-current-node? false
       set has-added-adjacent-node? false
       set has-added-adjacent-display? false
+      set last-checked-node nobody
 
       foreach path-nodes [cur-node ->
         if has-detected-current-node? [
@@ -767,16 +771,20 @@ to update-path [k n]
 
         if has-added-adjacent-node? and not has-added-adjacent-display? and [has-public-display?] of cur-node [
           set adjacent-displays lput cur-node adjacent-displays
+          set nodes-before-adjacent-displays lput last-checked-node nodes-before-adjacent-displays
           set has-added-adjacent-display? true
         ]
 
         if cur-node = n [
           set has-detected-current-node? true
         ]
+
+        set last-checked-node cur-node
       ]
 
       if length adjacent-nodes > length adjacent-displays [
         set adjacent-displays lput nobody adjacent-displays
+        set nodes-before-adjacent-displays lput last-checked-node nodes-before-adjacent-displays
       ]
     ]
 
@@ -804,6 +812,12 @@ to update-path [k n]
         if item loop-index adjacent-displays != nobody [
           ask item loop-index adjacent-displays [
             set people-at-adjacent-display ((count peds in-radius (area-of-awareness / scale) with [not (hidden?)] - peds-waiting-here) * 0.5) + peds-waiting-here
+          ]
+
+          if item loop-index nodes-before-adjacent-displays != nobody [
+            face item loop-index nodes-before-adjacent-displays
+
+            set people-at-adjacent-display people-at-adjacent-display + ((count peds in-cone (area-of-awareness / scale) angle-of-awareness with [next-node = item loop-index nodes-before-adjacent-displays]) * 2)
           ]
         ]
 
@@ -1154,13 +1168,19 @@ to move [k]
   ]
 
   ;Todo: adjust and maybe move to external report function?
-  ask peds in-cone (D) 120 with [not (self = myself) and not (hidden?)] [
-    ifelse distance destination < D or distance next-node < D [
-      set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-      set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
-    ] [
-      set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-      set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+  carefully [
+    ask peds in-cone (D) 120 with [not (self = myself) and is-initialized? and not (hidden?)] [
+      ifelse distance destination < D or distance next-node < D [
+        set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
+        set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+      ] [
+        set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
+        set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+      ]
+    ]
+  ] [
+    if show-logs? [
+      print word k " cannot keep distance to another ped this tick (social force may be too low)"
     ]
   ]
 
@@ -1384,11 +1404,11 @@ end
 GRAPHICS-WINDOW
 384
 10
-1366
-993
+1312
+939
 -1
 -1
-1.125
+22.5
 1
 10
 1
@@ -1398,10 +1418,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--400
-400
--400
-400
+-20
+20
+-20
+20
 0
 0
 1
@@ -1518,7 +1538,7 @@ D
 D
 0.1
 5
-1.0
+2.4
 .1
 1
 NIL
@@ -1550,7 +1570,7 @@ A
 A
 0
 1
-0.1
+1.0
 .1
 1
 NIL
@@ -1808,7 +1828,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8" "testing-environment-9"
-0
+2
 
 SWITCH
 1404
@@ -1854,7 +1874,7 @@ SWITCH
 517
 show-areas-of-awareness?
 show-areas-of-awareness?
-0
+1
 1
 -1000
 
