@@ -50,20 +50,44 @@ nl@experiment <- experiment(expname="hospital",
                             idsetup="setup",
                             idgo="simulate",
                             runtime=30000,
-                            evalticks=seq(40,50),
-                            metrics=c("time", "overall-contacts / 2"),
-                            variables = list('familiarity-rate' = list(min=0, max=1, qfun="qunif")),
+                            evalticks=seq(5000),
+                            metrics=c("time", "round overall-contacts / 2"),
+                            variables = list('static-signage-rate' = c(0, 0.25, 0.5, 0.75, 1)),
                             constants = list("scenario" = "\"hospital\"",
                                              "dt" = 0.5,
+                                             "V0" = 1,
+                                             "A" = 1,
+                                             "D" = 2.5,
+                                             "Tr" = 1,
                                              "initial-number-of-visitors" = 0,
-                                             "staff-members-per-level" = 4,
-                                             "spawn-rate" = 120,
+                                             "staff-members-per-level" = 3,
+                                             "staff-switches-levels?" = "false",
+                                             "spawn-rate" = 180,
+                                             "mean-treatment-time" = 10,
                                              "mean-visiting-time" = 30,
                                              "max-visiting-time" = 60,
                                              "max-capacity" = 120,
                                              "area-of-awareness" = 10,
                                              "angle-of-awareness" = 15,
-                                             "show-areas-of-awareness?" = "false"))
+                                             "use-stop-feature?" = "true",
+                                             "mean-waiting-tolerance" = 30,
+                                             "show-areas-of-awareness?" = "false",
+                                             "use-static-signage?" = "false",
+                                             "consider-people-at-adjacent-displays?" = "true",
+                                             "force-all-visitors-to-stick-to-one-ways?" = "true",
+                                             "contact-radius" = 1.5,
+                                             "critical-period" = 15,
+                                             "contact-tolerance" = 1,
+                                             "show-circles?" = "false",
+                                             "show-paths?" = "false",
+                                             "show-walking-paths?" = "false",
+                                             "show-logs?" = "false",
+                                             "show-contacts?" = "false",
+                                             "show-labels?" = "false",
+                                             "enable-gis-extension?" = "false",
+                                             "write-output?" = "false",
+                                             "output-steps" = 1000,
+                                             "stop-at-ticks" = 0))
 ```
 
 Check if all variables and constants are assigned correctly:
@@ -73,11 +97,16 @@ eval_variables_constants(nl)
 ```
 
 Set up simulation design:
+  
+```
+nl@simdesign <- simdesign_simple(nl = nl, nseeds = 4)
+```
+Latin hypercube sampling (sensitivity analysis):
 
 ```
 nl@simdesign <- simdesign_lhs(nl=nl,
-                              samples=1,
-                              nseeds=3,
+                              samples=5,
+                              nseeds=5,
                               precision=3)
 ```
 
@@ -94,6 +123,17 @@ Compute results:
 ```
 results <- run_nl_all(nl = nl)
 ```
+
+### Plot results
+
+```
+plot(results$`static-signage-rate`, results$`round overall-contacts / 2`,
+     xlab="Static signage rate (%)",
+     ylab="Contacts",
+     main="Overall contacts")
+```
+
+print(results$`overall-contacts / 2`)
 
 ### Evaluation
 

@@ -10,7 +10,7 @@
 ; - Fix and finish UKM (Finalize UKM tower and INCLUDE elevators)
 ; - Finalize airport scenario
 ; - Fix bugs (e.g. contact stamps -> also show in Thesis where the contacts occur; for discussion etc.
-; - only force unfamiliar/non staff members to stick to one ways!!!
+; - only force non staff members that follow public displays to stick to one ways!!!
 ; - when doing airport: use patch color of transport bands to increase agent speed, draw paths along them to make movement possible there
 ; - https://docs.ropensci.org/nlrx/reference/nlrx-package.html - NetLogo NLRX Package to easily run model from Rstudio and have results plotted!
 ; - only maybe: take care of the netlogo V6 comparison (would not work in version 7 and above)
@@ -29,7 +29,7 @@ globals [
   output-critical-contacts
   output-unique-contacts
   total-number-of-visitors
-  total-number-of-familiar-people
+  total-number-of-static-signage-people
   time
   levels
   level-switching-duration
@@ -54,7 +54,7 @@ peds-own [
   speedx
   speedy
   is-staff?
-  is-familiar?
+  uses-static-signage?
   is-visiting?
   has-visited?
   visit-start
@@ -505,8 +505,8 @@ to set-agents
   ]
 
   if count peds with [(not is-staff?)] > 0 [
-    ask n-of round (familiarity-rate * total-number-of-visitors) peds with [(not is-staff?)] [
-      make-familiar self
+    ask n-of round (static-signage-rate * total-number-of-visitors) peds with [(not is-staff?)] [
+      use-static-signage self
     ]
   ]
 
@@ -520,7 +520,7 @@ end
 ; @param int level
 ; @description Creates a new ped and sets its attributes
 
-to create-ped [is-familiar-with-building? is-staff-member? level-number origin-node delay-seconds]
+to create-ped [uses-only-static-signage? is-staff-member? level-number origin-node delay-seconds]
   let x 0
   let y 0
   let tmp-first-node nobody
@@ -564,7 +564,7 @@ to create-ped [is-familiar-with-building? is-staff-member? level-number origin-n
       ]
 
       set color gray
-      set is-familiar? true
+      set uses-static-signage? true
     ] [
       ifelse scenario = "airport" [
         set shape "person business"
@@ -573,7 +573,7 @@ to create-ped [is-familiar-with-building? is-staff-member? level-number origin-n
       ]
 
       set color cyan
-      set is-familiar? is-familiar-with-building?
+      set uses-static-signage? uses-only-static-signage?
     ]
 
     ifelse patch-size < 10 [
@@ -606,7 +606,7 @@ to create-ped [is-familiar-with-building? is-staff-member? level-number origin-n
       set visiting-time visiting-time * 60
     ] [
       set is-visiting? false
-      set treatment-time mean-treatment-time + random-normal 0 3
+      set treatment-time mean-treatment-time + random-normal 0 5
 
       if treatment-time < 2 [
         set treatment-time 2
@@ -663,14 +663,14 @@ to init-ped [k]
   set is-initialized? true
 end
 
-; @method make-familiar
-; @description "Make the ped familiar" with the building
+; @method use-static-signage
+; @description This ped will only follow static signage from now on
 
-to make-familiar [k]
-  set is-familiar? true
+to use-static-signage [k]
+  set uses-static-signage? true
   set color blue
 
-  set total-number-of-familiar-people total-number-of-familiar-people + 1
+  set total-number-of-static-signage-people total-number-of-static-signage-people + 1
 end
 
 ; @method link-nodes
@@ -740,8 +740,13 @@ to init-paths [k node1 node2]
   let path-file-2 word resource-path word "paths/" word [who] of node2 word "-" word [who] of node1 "-a.csv"
 
   if not is-staff? [
-    set path-file word resource-path word "paths/" word [who] of node1 word "-" word [who] of node2 "-r.csv"
-    set path-file-2 word resource-path word "paths/" word [who] of node2 word "-" word [who] of node1 "-r.csv"
+    ifelse not force-all-visitors-to-stick-to-one-ways? and uses-static-signage? [
+      set path-file word resource-path word "paths/" word [who] of node1 word "-" word [who] of node2 "-r-s.csv"
+      set path-file-2 word resource-path word "paths/" word [who] of node2 word "-" word [who] of node1 "-r-s.csv"
+    ] [
+      set path-file word resource-path word "paths/" word [who] of node1 word "-" word [who] of node2 "-r-d.csv"
+      set path-file-2 word resource-path word "paths/" word [who] of node2 word "-" word [who] of node1 "-r-d.csv"
+    ]
   ]
 
   ifelse file-exists? path-file [
@@ -823,7 +828,7 @@ to init-paths [k node1 node2]
 end
 
 ; @method update-path
-; @description Updates the current path based on the ped`s familiarity and public display sensory (if applicable)
+; @description Updates the current path based on the ped`s signage preferences and public display sensory (if applicable)
 ; @param ped k
 ; @param node n
 
@@ -836,7 +841,7 @@ to update-path [k n]
     set number-of-peds-waiting peds-waiting-here
   ]
 
-  ifelse not use-static-signage? and not is-familiar? and not is-staff? and current-node-has-display? [
+  ifelse not use-static-signage? and not uses-static-signage? and not is-staff? and current-node-has-display? [
     let available-paths paths
 
     let adjacent-nodes []
@@ -905,7 +910,7 @@ to update-path [k n]
 
         if item loop-index adjacent-displays != nobody [
           ask item loop-index adjacent-displays [
-            set people-at-adjacent-display ((count peds in-radius (area-of-awareness / scale) with [not (hidden?)] - peds-waiting-here) * 0.5) + peds-waiting-here
+            set people-at-adjacent-display ((count peds in-radius ((area-of-awareness / 2) / scale) with [not (hidden?)] - peds-waiting-here) * 0.5) + peds-waiting-here
           ]
 
           if item loop-index nodes-before-adjacent-displays != nobody [
@@ -1014,15 +1019,19 @@ to set-paths [k origin-nodes]
   let destination-node destination
 
   foreach origin-nodes [i ->
-    let out-links [my-out-links] of last i
+    let connected-links [my-links] of last i
 
     if not is-staff? [
-      set out-links [my-out-links with [not is-restricted?]] of last i
+      ifelse uses-static-signage? [
+        set connected-links [my-links with [not is-restricted?]] of last i
+      ] [
+        set connected-links [my-out-links with [not is-restricted?]] of last i
+      ]
     ]
 
     let reachable-nodes []
 
-    ask out-links [
+    ask connected-links [
       ask both-ends [
         if [who] of self != [who] of last i [
           if not prevent-unnecessary-level-switches? or ([level] of origin-node != [level] of destination-node) or (prevent-unnecessary-level-switches? and [level] of origin-node = [level] of destination-node and [level] of self = [level] of destination-node) [
@@ -1312,7 +1321,7 @@ to move [k]
               ]
 
               set treatment-start 0
-              set treatment-time mean-treatment-time + random-normal 0 3
+              set treatment-time mean-treatment-time + random-normal 0 5
 
               if treatment-time < 2 [
                 set treatment-time 2
@@ -1391,7 +1400,7 @@ to move [k]
         ]
       ] [
         if has-moved? [
-          ifelse not is-familiar? [
+          ifelse not uses-static-signage? [
             set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
             update-path self next-node
           ] [
@@ -1422,8 +1431,8 @@ to simulate
   ask peds [
     ifelse not is-initialized? [
       if (init-delay < 1) or ((time - created-at) > init-delay) [
-        if familiarity-rate > 0 and ((total-number-of-familiar-people > 0 and total-number-of-familiar-people / total-number-of-visitors < familiarity-rate) or total-number-of-familiar-people < 1) [
-          make-familiar self
+        if static-signage-rate > 0 and ((total-number-of-static-signage-people > 0 and total-number-of-static-signage-people / total-number-of-visitors < static-signage-rate) or total-number-of-static-signage-people < 1) [
+          use-static-signage self
         ]
 
         init-ped self
@@ -1498,11 +1507,11 @@ end
 GRAPHICS-WINDOW
 384
 10
-1385
-820
+1293
+920
 -1
 -1
-0.9
+1.125
 1
 10
 1
@@ -1512,8 +1521,8 @@ GRAPHICS-WINDOW
 0
 0
 1
--500
-500
+-400
+400
 -400
 400
 0
@@ -1690,11 +1699,11 @@ SLIDER
 156
 363
 189
-familiarity-rate
-familiarity-rate
+static-signage-rate
+static-signage-rate
 0
 1
-0.0
+1.0
 .05
 1
 NIL
@@ -1922,7 +1931,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8" "testing-environment-9"
-1
+0
 
 SWITCH
 1405
@@ -2130,7 +2139,7 @@ spawn-rate
 spawn-rate
 0
 1000
-106.0
+180.0
 1
 1
 seconds
@@ -2231,7 +2240,7 @@ staff-members-per-level
 staff-members-per-level
 0
 10
-4.0
+3.0
 1
 1
 NIL
@@ -2272,7 +2281,7 @@ mean-treatment-time
 mean-treatment-time
 0
 30
-5.0
+10.0
 1
 1
 minutes
@@ -2386,6 +2395,17 @@ SWITCH
 enable-gis-extension?
 enable-gis-extension?
 1
+1
+-1000
+
+SWITCH
+190
+520
+364
+553
+force-all-visitors-to-stick-to-one-ways?
+force-all-visitors-to-stick-to-one-ways?
+0
 1
 -1000
 
