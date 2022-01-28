@@ -1145,5 +1145,57 @@
                 "level": 4,
             }
         },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-131, 92],
+            },
+            "properties": {
+                "isOrigin": true,
+                "isDestination": false,
+                "hasPublicDisplay": true,
+                "level": 1,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [264, 91],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": false,
+                "hasPublicDisplay": true,
+                "level": 2,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-131, -304],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": false,
+                "hasPublicDisplay": true,
+                "level": 3,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [265, -304],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": false,
+                "hasPublicDisplay": true,
+                "level": 4,
+            }
+        },
     ]
 }

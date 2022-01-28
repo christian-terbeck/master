@@ -43,21 +43,21 @@ print(nl)
 Set up the experiment based on the NetLogo model.
 
 ```
-nl@experiment <- experiment(expname="hospital",
-                            outpath=outpath,
-                            repetition=1,
-                            tickmetrics="false",
-                            idsetup="setup",
-                            idgo="simulate",
-                            runtime=30000,
-                            evalticks=seq(5000),
-                            metrics=c("time", "round overall-contacts / 2"),
-                            variables = list('static-signage-rate' = c(0, 0.25, 0.5, 0.75, 1)),
+nl@experiment <- experiment(expname = "hospital",
+                            outpath = outpath,
+                            repetition = 1,
+                            tickmetrics = "false",
+                            idsetup = "setup",
+                            idgo = "simulate",
+                            runtime = 25000,
+                            evalticks = seq(5000),
+                            metrics = c("time", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "overall-contact-time / overall-contacts", "contact-distance / contact-distance-values"),
+                            variables = list("static-signage-rate"= list(values = c(0, 0.25, 0.5, 0.75, 1))),
                             constants = list("scenario" = "\"hospital\"",
-                                             "dt" = 0.5,
+                                             "dt" = 1,
                                              "V0" = 1,
                                              "A" = 1,
-                                             "D" = 2.5,
+                                             "D" = 2,
                                              "Tr" = 1,
                                              "initial-number-of-visitors" = 0,
                                              "staff-members-per-level" = 3,
@@ -70,11 +70,12 @@ nl@experiment <- experiment(expname="hospital",
                                              "area-of-awareness" = 10,
                                              "angle-of-awareness" = 15,
                                              "use-stop-feature?" = "true",
-                                             "mean-waiting-tolerance" = 30,
+                                             "mean-waiting-tolerance" = 600,
                                              "show-areas-of-awareness?" = "false",
                                              "use-static-signage?" = "false",
                                              "consider-people-at-adjacent-displays?" = "true",
                                              "force-all-visitors-to-stick-to-one-ways?" = "true",
+                                             "scan-movement-directions?" = "false",
                                              "contact-radius" = 1.5,
                                              "critical-period" = 15,
                                              "contact-tolerance" = 1,
@@ -87,7 +88,9 @@ nl@experiment <- experiment(expname="hospital",
                                              "enable-gis-extension?" = "false",
                                              "write-output?" = "false",
                                              "output-steps" = 1000,
-                                             "stop-at-ticks" = 0))
+                                             "stop-at-ticks" = 0,
+                                             "gate-open-period" = 0,
+                                             "mean-passenger-number" = 0))
 ```
 
 Check if all variables and constants are assigned correctly:
@@ -99,8 +102,77 @@ eval_variables_constants(nl)
 Set up simulation design:
   
 ```
-nl@simdesign <- simdesign_simple(nl = nl, nseeds = 4)
+nl@simdesign <- simdesign_distinct(nl = nl, nseeds = 4)
 ```
+
+Check for errors again:
+  
+```
+print(nl)
+```
+
+### Running Simulation(s)
+
+Compute results:
+  
+```
+results <- run_nl_all(nl = nl)
+```
+
+Setting up experiment for sensitivity analysis:
+
+
+```
+nl@experiment <- experiment(expname = "hospital",
+                            outpath = outpath,
+                            repetition = 1,
+                            tickmetrics = "false",
+                            idsetup = "setup",
+                            idgo = "simulate",
+                            runtime = 25000,
+                            evalticks = seq(5000),
+                            metrics = c("time", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "overall-contact-time / overall-contacts", "contact-distance / contact-distance-values"),
+                            variables = list("static-signage-rate" = list(min = 0, max = 1, qfun = "qunif")),
+                            constants = list("scenario" = "\"hospital\"",
+                                             "dt" = 1,
+                                             "V0" = 1,
+                                             "A" = 1,
+                                             "D" = 2,
+                                             "Tr" = 1,
+                                             "initial-number-of-visitors" = 0,
+                                             "staff-members-per-level" = 3,
+                                             "staff-switches-levels?" = "false",
+                                             "spawn-rate" = 180,
+                                             "mean-treatment-time" = 10,
+                                             "mean-visiting-time" = 30,
+                                             "max-visiting-time" = 60,
+                                             "max-capacity" = 120,
+                                             "area-of-awareness" = 10,
+                                             "angle-of-awareness" = 15,
+                                             "use-stop-feature?" = "true",
+                                             "mean-waiting-tolerance" = 600,
+                                             "show-areas-of-awareness?" = "false",
+                                             "use-static-signage?" = "false",
+                                             "consider-people-at-adjacent-displays?" = "true",
+                                             "force-all-visitors-to-stick-to-one-ways?" = "true",
+                                             "scan-movement-directions?" = "false",
+                                             "contact-radius" = 1.5,
+                                             "critical-period" = 15,
+                                             "contact-tolerance" = 1,
+                                             "show-circles?" = "false",
+                                             "show-paths?" = "false",
+                                             "show-walking-paths?" = "false",
+                                             "show-logs?" = "false",
+                                             "show-contacts?" = "false",
+                                             "show-labels?" = "false",
+                                             "enable-gis-extension?" = "false",
+                                             "write-output?" = "false",
+                                             "output-steps" = 1000,
+                                             "stop-at-ticks" = 0,
+                                             "gate-open-period" = 0,
+                                             "mean-passenger-number" = 0))
+```
+
 Latin hypercube sampling (sensitivity analysis):
 
 ```
@@ -133,7 +205,14 @@ plot(results$`static-signage-rate`, results$`round overall-contacts / 2`,
      main="Overall contacts")
 ```
 
-print(results$`overall-contacts / 2`)
+boxplot:
+
+```
+boxplot(results$`round overall-contacts / 2`~results$`static-signage-rate`,
+     xlab="Static signage rate (%)",
+     ylab="Contacts",
+     main="Overall contacts")
+```
 
 ### Evaluation
 

@@ -10,7 +10,6 @@
 ; - Fix and finish UKM (Finalize UKM tower and INCLUDE elevators)
 ; - Finalize airport scenario
 ; - Fix bugs (e.g. contact stamps -> also show in Thesis where the contacts occur; for discussion etc.
-; - only force non staff members that follow public displays to stick to one ways!!!
 ; - when doing airport: use patch color of transport bands to increase agent speed, draw paths along them to make movement possible there
 ; - https://docs.ropensci.org/nlrx/reference/nlrx-package.html - NetLogo NLRX Package to easily run model from Rstudio and have results plotted!
 ; - only maybe: take care of the netlogo V6 comparison (would not work in version 7 and above)
@@ -38,6 +37,8 @@ globals [
   unique-contacts
   critical-contacts
   visitor-contacts
+  staff-contacts
+  visitor-staff-contacts
   contact-distance-values
   contact-distance
   scenario-has-one-way-paths?
@@ -489,9 +490,12 @@ end
 
 to set-agents
   if scenario = "hospital" and staff-members-per-level > 0 [
+    let delay 0
+
     repeat staff-members-per-level [
       foreach levels [x ->
-        create-ped true true x nobody 0
+        create-ped true true x nobody delay
+        set delay delay + round (30 + random-normal 0 5)
       ]
     ]
   ]
@@ -508,10 +512,6 @@ to set-agents
     ask n-of round (static-signage-rate * total-number-of-visitors) peds with [(not is-staff?)] [
       use-static-signage self
     ]
-  ]
-
-  ask peds [
-    init-ped self
   ]
 end
 
@@ -627,7 +627,13 @@ to create-ped [uses-only-static-signage? is-staff-member? level-number origin-no
     set current-level [level] of tmp-first-node
 
     ifelse (is-staff? and not staff-switches-levels?) or scenario = "airport" [
-      set destination one-of nodes with [is-destination? and not (self = tmp-first-node) and (level = [level] of tmp-first-node)]
+      ifelse scenario = "hospital" and random 10 != 10 [
+        let destination-nodes nodes with [is-destination? and not (self = tmp-first-node) and (level = [level] of tmp-first-node)]
+        let closest-nodes min-n-of 2 destination-nodes [distance tmp-first-node]
+        set destination one-of closest-nodes
+      ] [
+        set destination one-of nodes with [is-destination? and not (self = tmp-first-node) and (level = [level] of tmp-first-node)]
+      ]
     ] [
       set destination one-of nodes with [is-destination? and not (self = tmp-first-node)]
     ]
@@ -906,17 +912,25 @@ to update-path [k n]
           ]
         ]
 
-        set tmp-detected-people count peds in-cone (area-of-awareness / scale) angle-of-awareness with [not (self = k) and not (hidden?)]
+        ifelse scan-movement-directions? [
+          set tmp-detected-people (count peds in-cone (area-of-awareness / scale) angle-of-awareness with [not (self = k) and next-node = n and not (hidden?)]) * 2 + (count peds in-cone (area-of-awareness / scale) angle-of-awareness with [not (self = k) and next-node != n and not (hidden?)])
+        ] [
+          set tmp-detected-people count peds in-cone (area-of-awareness / scale) angle-of-awareness with [not (self = k) and not (hidden?)]
+        ]
 
         if item loop-index adjacent-displays != nobody [
           ask item loop-index adjacent-displays [
-            set people-at-adjacent-display ((count peds in-radius ((area-of-awareness / 2) / scale) with [not (hidden?)] - peds-waiting-here) * 0.5) + peds-waiting-here
+            set people-at-adjacent-display peds-waiting-here
           ]
 
           if item loop-index nodes-before-adjacent-displays != nobody [
             face item loop-index nodes-before-adjacent-displays
 
-            set people-at-adjacent-display people-at-adjacent-display + ((count peds in-cone (area-of-awareness / scale) angle-of-awareness with [next-node = item loop-index nodes-before-adjacent-displays]) * 2)
+            ifelse scan-movement-directions? [
+              set people-at-adjacent-display people-at-adjacent-display + count peds in-cone (area-of-awareness / scale) angle-of-awareness with [next-node = item loop-index nodes-before-adjacent-displays]
+            ] [
+              set people-at-adjacent-display people-at-adjacent-display + count peds in-cone (area-of-awareness / scale) angle-of-awareness
+            ]
           ]
         ]
 
@@ -1226,8 +1240,14 @@ to trace-contacts
             set critical-contacts critical-contacts + 1
           ]
 
-          if not is-staff? and (ped x = nobody or [is-staff?] of ped x = false) [
-            set visitor-contacts visitor-contacts + 1
+          ifelse is-staff? and (ped x != nobody and [is-staff?] of ped x = true) [
+            set staff-contacts staff-contacts + 1
+          ] [
+            ifelse not is-staff? and (ped x = nobody or [is-staff?] of ped x = false) [
+              set visitor-contacts visitor-contacts + 1
+            ] [
+              set visitor-staff-contacts visitor-staff-contacts + 1
+            ]
           ]
 
           if show-logs? [
@@ -1270,15 +1290,14 @@ to move [k]
     set h atan speedx speedy
   ]
 
-  ;Todo: adjust and maybe move to external report function?
   carefully [
-    ask peds in-cone (D / scale) 120 with [not (self = myself) and is-initialized? and not (hidden?)] [
-      ifelse distance destination < D or distance next-node < D [
-        set repx repx + A / 2 * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-        set repy repy + A / 2 * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+    ask peds in-radius (D / scale) with [not (self = myself) and is-initialized? and not (hidden?)] [
+      ifelse distance destination < (D / scale) or distance next-node < (D / scale) [
+        set repx repx + A / 2 * exp((1 - distance myself) / (D / scale)) * sin(towards myself) * (1 - cos(towards myself - h))
+        set repy repy + A / 2 * exp((1 - distance myself) / (D / scale)) * cos(towards myself) * (1 - cos(towards myself - h))
       ] [
-        set repx repx + A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))
-        set repy repy + A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))
+        set repx repx + A * exp((1 - distance myself) / (D / scale)) * sin(towards myself) * (1 - cos(towards myself - h))
+        set repy repy + A * exp((1 - distance myself) / (D / scale)) * cos(towards myself) * (1 - cos(towards myself - h))
       ]
     ]
   ] [
@@ -1290,8 +1309,8 @@ to move [k]
   ;Todo: work on social force when it comes to black patches - maybe just prevent walking on black patches
 
   ask patches in-radius (D / scale) with [pcolor < 8] [
-    set repx repx + (A * exp((1 - distance myself) / D) * sin(towards myself) * (1 - cos(towards myself - h))) / 5
-    set repy repy + (A * exp((1 - distance myself) / D) * cos(towards myself) * (1 - cos(towards myself - h))) / 5
+    set repx repx + (A * exp((1 - distance myself) / (D / scale)) * sin(towards myself) * (1 - cos(towards myself - h))) / 5
+    set repy repy + (A * exp((1 - distance myself) / (D / scale)) * cos(towards myself) * (1 - cos(towards myself - h))) / 5
   ]
 
   set speedx speedx + dt * (repx + (V0 * sin hd - speedx) / Tr)
@@ -1330,7 +1349,16 @@ to move [k]
               set treatment-time treatment-time * 60
 
               let cur-destination destination
-              let new-destination one-of nodes with [is-destination? and not (self = cur-destination) and (level = [level] of cur-destination)]
+              let new-destination nobody
+
+              ifelse random 10 != 10 [
+                let destination-nodes nodes with [is-destination? and not (self = cur-destination) and (level = [level] of cur-destination)]
+                let closest-nodes min-n-of 2 destination-nodes [distance cur-destination]
+                set new-destination one-of closest-nodes
+              ] [
+                set new-destination one-of nodes with [is-destination? and not (self = cur-destination) and (level = [level] of cur-destination)]
+              ]
+
               init-paths self destination new-destination
               update-path self origin
 
@@ -1431,7 +1459,7 @@ to simulate
   ask peds [
     ifelse not is-initialized? [
       if (init-delay < 1) or ((time - created-at) > init-delay) [
-        if static-signage-rate > 0 and ((total-number-of-static-signage-people > 0 and total-number-of-static-signage-people / total-number-of-visitors < static-signage-rate) or total-number-of-static-signage-people < 1) [
+        if static-signage-rate > 0 and ((total-number-of-static-signage-people > 0 and total-number-of-visitors > 0 and total-number-of-static-signage-people / total-number-of-visitors < static-signage-rate) or total-number-of-static-signage-people < 1) [
           use-static-signage self
         ]
 
@@ -1581,10 +1609,10 @@ NIL
 1
 
 SLIDER
-1579
-446
-1754
-479
+1581
+495
+1756
+528
 V0
 V0
 0
@@ -1618,30 +1646,30 @@ count peds with [not (hidden?)] / world-width / world-height
 11
 
 SLIDER
-1401
-446
-1576
-479
+1403
+495
+1578
+528
 dt
 dt
 0
 1
-0.46
+0.5
 .01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-1579
-482
-1754
-515
+1581
+531
+1756
+564
 D
 D
 0.1
 5
-2.4
+1.5
 .1
 1
 NIL
@@ -1665,10 +1693,10 @@ NIL
 1
 
 SLIDER
-1402
-482
-1576
-515
+1404
+531
+1578
+564
 A
 A
 0
@@ -1680,15 +1708,15 @@ NIL
 HORIZONTAL
 
 SLIDER
-1402
-518
-1577
-551
+1404
+567
+1579
+600
 Tr
 Tr
 .1
 2
-0.4
+1.0
 .1
 1
 NIL
@@ -1703,7 +1731,7 @@ static-signage-rate
 static-signage-rate
 0
 1
-1.0
+0.0
 .05
 1
 NIL
@@ -1711,9 +1739,9 @@ HORIZONTAL
 
 SWITCH
 13
-716
+751
 187
-749
+784
 show-logs?
 show-logs?
 1
@@ -1722,9 +1750,9 @@ show-logs?
 
 SLIDER
 13
-580
+615
 185
-613
+648
 contact-radius
 contact-radius
 0
@@ -1737,9 +1765,9 @@ HORIZONTAL
 
 SLIDER
 188
-580
+615
 361
-613
+648
 critical-period
 critical-period
 0
@@ -1752,9 +1780,9 @@ HORIZONTAL
 
 SLIDER
 13
-616
+651
 185
-649
+684
 contact-tolerance
 contact-tolerance
 0
@@ -1790,7 +1818,7 @@ overall-contacts / 2 / (total-number-of-visitors + count peds with [is-staff?])
 MONITOR
 1399
 108
-1505
+1574
 153
 Unique contacts
 unique-contacts / 2
@@ -1799,9 +1827,9 @@ unique-contacts / 2
 11
 
 MONITOR
-1509
+1580
 108
-1613
+1756
 153
 Critical contacts
 critical-contacts / 2
@@ -1810,10 +1838,10 @@ critical-contacts / 2
 11
 
 MONITOR
-1399
-156
-1576
-201
+1401
+205
+1578
+250
 Avg. contact duration (s)
 overall-contact-time / overall-contacts
 3
@@ -1821,10 +1849,10 @@ overall-contact-time / overall-contacts
 11
 
 MONITOR
-1580
-156
-1755
-201
+1582
+205
+1757
+250
 Avg. contact distance (m)
 contact-distance / contact-distance-values
 3
@@ -1832,10 +1860,10 @@ contact-distance / contact-distance-values
 11
 
 PLOT
-1400
-207
-1756
-420
+1402
+256
+1758
+469
 Contacts
 ticks
 contacts
@@ -1855,9 +1883,9 @@ PENS
 
 SWITCH
 189
-617
+652
 360
-650
+685
 show-circles?
 show-circles?
 0
@@ -1866,9 +1894,9 @@ show-circles?
 
 SWITCH
 13
-752
+787
 188
-785
+820
 show-labels?
 show-labels?
 1
@@ -1884,7 +1912,7 @@ area-of-awareness
 area-of-awareness
 1
 50
-15.0
+10.0
 0.5
 1
 meters
@@ -1892,20 +1920,20 @@ HORIZONTAL
 
 SWITCH
 12
-679
+714
 186
-712
+747
 show-paths?
 show-paths?
-0
+1
 1
 -1000
 
 SWITCH
 189
-679
+714
 360
-712
+747
 show-walking-paths?
 show-walking-paths?
 1
@@ -1914,9 +1942,9 @@ show-walking-paths?
 
 SWITCH
 189
-717
+752
 360
-750
+785
 show-contacts?
 show-contacts?
 1
@@ -1934,10 +1962,10 @@ scenario
 0
 
 SWITCH
-1405
-709
-1579
-742
+1407
+758
+1581
+791
 write-output?
 write-output?
 0
@@ -1945,10 +1973,10 @@ write-output?
 -1000
 
 INPUTBOX
-1580
-613
-1753
-673
+1582
+662
+1755
+722
 stop-at-ticks
 0.0
 1
@@ -1982,10 +2010,10 @@ show-areas-of-awareness?
 -1000
 
 SLIDER
-1582
-709
-1754
-742
+1584
+758
+1756
+791
 output-steps
 output-steps
 10
@@ -2017,10 +2045,10 @@ Main setup
 1
 
 TEXTBOX
-1407
-693
-1557
-711
+1409
+742
+1559
+760
 Output generation
 11
 0.0
@@ -2038,9 +2066,9 @@ Public Display settings
 
 TEXTBOX
 14
-564
+599
 164
-582
+617
 Contact settings
 11
 0.0
@@ -2048,19 +2076,19 @@ Contact settings
 
 TEXTBOX
 13
-661
+696
 163
-679
+714
 Additional options
 11
 0.0
 1
 
 TEXTBOX
-1404
-429
-1699
-457
+1406
+478
+1701
+506
 Speed and social force settings
 11
 0.0
@@ -2097,17 +2125,17 @@ mean-waiting-tolerance
 mean-waiting-tolerance
 0
 1800
-30.0
+500.0
 10
 1
 seconds
 HORIZONTAL
 
 BUTTON
-1404
-613
-1577
-646
+1406
+662
+1579
+695
 NIL
 show-coordinate
 T
@@ -2121,10 +2149,10 @@ NIL
 1
 
 TEXTBOX
-1404
-562
-1554
-580
+1406
+611
+1556
+629
 Helper functions
 11
 0.0
@@ -2198,10 +2226,10 @@ minutes
 HORIZONTAL
 
 BUTTON
-1403
-578
-1577
-611
+1405
+627
+1579
+660
 Start/stop observe agent
 observe-agent
 NIL
@@ -2215,10 +2243,10 @@ NIL
 1
 
 BUTTON
-1579
-578
-1753
-611
+1581
+627
+1755
+660
 Start/stop observe display
 observe-display
 NIL
@@ -2305,7 +2333,7 @@ SWITCH
 553
 consider-people-at-adjacent-displays?
 consider-people-at-adjacent-displays?
-1
+0
 1
 -1000
 
@@ -2360,10 +2388,10 @@ Hospital scenario settings
 1
 
 MONITOR
-1616
-108
-1755
-153
+1400
+156
+1538
+201
 Contacts between visitors
 visitor-contacts / 2
 0
@@ -2371,10 +2399,10 @@ visitor-contacts / 2
 11
 
 BUTTON
-1405
-648
-1577
-681
+1407
+697
+1579
+730
 Transform nodes (CSV)
 transform-nodes
 NIL
@@ -2389,9 +2417,9 @@ NIL
 
 SWITCH
 189
-752
+787
 360
-785
+820
 enable-gis-extension?
 enable-gis-extension?
 1
@@ -2406,6 +2434,39 @@ SWITCH
 force-all-visitors-to-stick-to-one-ways?
 force-all-visitors-to-stick-to-one-ways?
 0
+1
+-1000
+
+MONITOR
+1542
+156
+1655
+201
+Visitor-staff contacts
+visitor-staff-contacts / 2
+0
+1
+11
+
+MONITOR
+1659
+156
+1756
+201
+Staff contacts
+staff-contacts / 2
+0
+1
+11
+
+SWITCH
+13
+556
+185
+589
+scan-movement-directions?
+scan-movement-directions?
+1
 1
 -1000
 
