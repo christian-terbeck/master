@@ -5,14 +5,20 @@
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
 ;Todo:
-; - Create R-Markdown for evaluation (.Rmd)
+; - do analysis at 2500, 5000, 7500 and 10000 ticks?
+; - people scale (especially in airport!)
+; - write about Netlogo performance!
+; - use 0 axis in plots, check whether runtime can be further improved..?
+; - focus on small trend in hospital and have good values in airport
+; - further increase probability that staff members stay in their area
+; - have staff members spread evenly on each level!!!
+; - make 90 % of people use elevator; if using stairs take closest stairway
+; - double check display logic
 ; - Write in Thesis about backwards compatibility (transformation function to transform data that older versions can run it to - was necessary to do analysis)
-; - Fix and finish UKM (Finalize UKM tower and INCLUDE elevators)
-; - Finalize airport scenario
 ; - Fix bugs (e.g. contact stamps -> also show in Thesis where the contacts occur; for discussion etc.
 ; - when doing airport: use patch color of transport bands to increase agent speed, draw paths along them to make movement possible there
 ; - https://docs.ropensci.org/nlrx/reference/nlrx-package.html - NetLogo NLRX Package to easily run model from Rstudio and have results plotted!
-; - only maybe: take care of the netlogo V6 comparison (would not work in version 7 and above)
+; - run r analysis in testing environment
 
 extensions [csv gis]
 
@@ -22,6 +28,7 @@ globals [
   dim-x
   dim-y
   resource-path
+  cache-path-limit
   output-path
   output-ticks
   output-contacts
@@ -39,6 +46,9 @@ globals [
   visitor-contacts
   staff-contacts
   visitor-staff-contacts
+  no-staff-only-contacts
+  arrival-contacts
+  departure-contacts
   contact-distance-values
   contact-distance
   scenario-has-one-way-paths?
@@ -127,6 +137,8 @@ to setup
   ]
 
   set-default-shape circles "circle 2"
+
+  set cache-path-limit 50
 
   set-environment
   set-nodes
@@ -577,7 +589,7 @@ to create-ped [uses-only-static-signage? is-staff-member? level-number origin-no
     ]
 
     ifelse patch-size < 10 [
-      set size 10 / patch-size
+      set size 2
     ] [
       set size 1
     ]
@@ -627,7 +639,7 @@ to create-ped [uses-only-static-signage? is-staff-member? level-number origin-no
     set current-level [level] of tmp-first-node
 
     ifelse (is-staff? and not staff-switches-levels?) or scenario = "airport" [
-      ifelse scenario = "hospital" and random 10 != 10 [
+      ifelse scenario = "hospital" and random 20 != 19 [
         let destination-nodes nodes with [is-destination? and not (self = tmp-first-node) and (level = [level] of tmp-first-node)]
         let closest-nodes min-n-of 2 destination-nodes [distance tmp-first-node]
         set destination one-of closest-nodes
@@ -741,6 +753,7 @@ to init-paths [k node1 node2]
   set last-node node1
   set paths []
   set current-path []
+  let path-count 0
 
   let path-file word resource-path word "paths/" word [who] of node1 word "-" word [who] of node2 "-a.csv"
   let path-file-2 word resource-path word "paths/" word [who] of node2 word "-" word [who] of node1 "-a.csv"
@@ -760,7 +773,7 @@ to init-paths [k node1 node2]
     let tmp-nodes []
     let tmp-path []
 
-    while [not file-at-end?] [
+    while [not file-at-end? and path-count < cache-path-limit] [
       set tmp-nodes (csv:from-row file-read-line ",")
 
       set tmp-path []
@@ -770,6 +783,8 @@ to init-paths [k node1 node2]
       ]
 
       set paths lput tmp-path paths
+
+      set path-count path-count + 1
     ]
 
     file-close
@@ -778,7 +793,7 @@ to init-paths [k node1 node2]
       print word "Loaded paths from cached file " path-file
     ]
   ] [
-    ifelse file-exists? path-file-2 and not scenario-has-one-way-paths? [
+    ifelse file-exists? path-file-2 and (is-staff? or not scenario-has-one-way-paths?) [
       file-open path-file-2
       let tmp-nodes []
       let tmp-path []
@@ -1248,6 +1263,16 @@ to trace-contacts
             ] [
               set visitor-staff-contacts visitor-staff-contacts + 1
             ]
+
+            set no-staff-only-contacts no-staff-only-contacts + 1
+
+            if scenario = "airport" [
+              ifelse current-level = 1 [
+                set arrival-contacts arrival-contacts + 1
+              ] [
+                set departure-contacts departure-contacts + 1
+              ]
+            ]
           ]
 
           if show-logs? [
@@ -1306,9 +1331,7 @@ to move [k]
     ]
   ]
 
-  ;Todo: work on social force when it comes to black patches - maybe just prevent walking on black patches
-
-  ask patches in-radius (D / scale) with [pcolor < 8] [
+  ask patches in-radius ((D / scale) / 2) with [pcolor < 8] [
     set repx repx + (A * exp((1 - distance myself) / (D / scale)) * sin(towards myself) * (1 - cos(towards myself - h))) / 5
     set repy repy + (A * exp((1 - distance myself) / (D / scale)) * cos(towards myself) * (1 - cos(towards myself - h))) / 5
   ]
@@ -1351,7 +1374,7 @@ to move [k]
               let cur-destination destination
               let new-destination nobody
 
-              ifelse random 10 != 10 [
+              ifelse random 20 != 19 [
                 let destination-nodes nodes with [is-destination? and not (self = cur-destination) and (level = [level] of cur-destination)]
                 let closest-nodes min-n-of 2 destination-nodes [distance cur-destination]
                 set new-destination one-of closest-nodes
@@ -1480,7 +1503,11 @@ to simulate
     ifelse scenario = "airport" [
       create-ped false false 2 nobody 0
     ] [
-      create-ped false false -1 nobody 0
+      ifelse scenario = "hospital" [
+        create-ped false false -1 node 88 0
+      ] [
+        create-ped false false -1 nobody 0
+      ]
     ]
   ]
 
@@ -1498,7 +1525,7 @@ to simulate
 
     repeat passenger-amount [
       create-ped false false 1 gate-node delay
-      set delay delay + round (15 + random-normal 0 5)
+      set delay delay + round (7 + random-normal 0 2)
     ]
 
     if show-logs? [
@@ -1535,11 +1562,11 @@ end
 GRAPHICS-WINDOW
 384
 10
-1293
-920
+1385
+820
 -1
 -1
-1.125
+0.9
 1
 10
 1
@@ -1549,8 +1576,8 @@ GRAPHICS-WINDOW
 0
 0
 1
--400
-400
+-500
+500
 -400
 400
 0
@@ -1610,9 +1637,9 @@ NIL
 
 SLIDER
 1581
-495
+543
 1756
-528
+576
 V0
 V0
 0
@@ -1647,14 +1674,14 @@ count peds with [not (hidden?)] / world-width / world-height
 
 SLIDER
 1403
-495
+543
 1578
-528
+576
 dt
 dt
 0
 1
-0.5
+1.0
 .01
 1
 NIL
@@ -1662,14 +1689,14 @@ HORIZONTAL
 
 SLIDER
 1581
-531
+579
 1756
-564
+612
 D
 D
 0.1
 5
-1.5
+2.0
 .1
 1
 NIL
@@ -1694,9 +1721,9 @@ NIL
 
 SLIDER
 1404
-531
+579
 1578
-564
+612
 A
 A
 0
@@ -1709,9 +1736,9 @@ HORIZONTAL
 
 SLIDER
 1404
-567
+615
 1579
-600
+648
 Tr
 Tr
 .1
@@ -1787,7 +1814,7 @@ contact-tolerance
 contact-tolerance
 0
 10
-1.0
+2.0
 1
 1
 seconds
@@ -1839,9 +1866,9 @@ critical-contacts / 2
 
 MONITOR
 1401
-205
+253
 1578
-250
+298
 Avg. contact duration (s)
 overall-contact-time / overall-contacts
 3
@@ -1850,9 +1877,9 @@ overall-contact-time / overall-contacts
 
 MONITOR
 1582
-205
+253
 1757
-250
+298
 Avg. contact distance (m)
 contact-distance / contact-distance-values
 3
@@ -1861,9 +1888,9 @@ contact-distance / contact-distance-values
 
 PLOT
 1402
-256
+304
 1758
-469
+517
 Contacts
 ticks
 contacts
@@ -1912,7 +1939,7 @@ area-of-awareness
 area-of-awareness
 1
 50
-10.0
+25.0
 0.5
 1
 meters
@@ -1954,18 +1981,18 @@ show-contacts?
 CHOOSER
 8
 72
-184
+187
 117
 scenario
 scenario
-"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8" "testing-environment-9"
-0
+"hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8" "testing-environment-9" "testing-environment-10"
+1
 
 SWITCH
 1407
-758
+806
 1581
-791
+839
 write-output?
 write-output?
 0
@@ -1974,9 +2001,9 @@ write-output?
 
 INPUTBOX
 1582
-662
+710
 1755
-722
+770
 stop-at-ticks
 0.0
 1
@@ -2005,15 +2032,15 @@ SWITCH
 517
 show-areas-of-awareness?
 show-areas-of-awareness?
-1
+0
 1
 -1000
 
 SLIDER
 1584
-758
+806
 1756
-791
+839
 output-steps
 output-steps
 10
@@ -2046,9 +2073,9 @@ Main setup
 
 TEXTBOX
 1409
-742
+790
 1559
-760
+808
 Output generation
 11
 0.0
@@ -2086,9 +2113,9 @@ Additional options
 
 TEXTBOX
 1406
-478
+526
 1701
-506
+554
 Speed and social force settings
 11
 0.0
@@ -2101,7 +2128,7 @@ SWITCH
 481
 use-stop-feature?
 use-stop-feature?
-0
+1
 1
 -1000
 
@@ -2133,9 +2160,9 @@ HORIZONTAL
 
 BUTTON
 1406
-662
+710
 1579
-695
+743
 NIL
 show-coordinate
 T
@@ -2150,9 +2177,9 @@ NIL
 
 TEXTBOX
 1406
-611
+659
 1556
-629
+677
 Helper functions
 11
 0.0
@@ -2182,7 +2209,7 @@ max-capacity
 max-capacity
 0
 2000
-161.0
+2000.0
 1
 1
 visitors
@@ -2219,7 +2246,7 @@ mean-visiting-time
 mean-visiting-time
 5
 100
-23.0
+45.0
 1
 1
 minutes
@@ -2227,9 +2254,9 @@ HORIZONTAL
 
 BUTTON
 1405
-627
+675
 1579
-660
+708
 Start/stop observe agent
 observe-agent
 NIL
@@ -2244,9 +2271,9 @@ NIL
 
 BUTTON
 1581
-627
+675
 1755
-660
+708
 Start/stop observe display
 observe-display
 NIL
@@ -2268,7 +2295,7 @@ staff-members-per-level
 staff-members-per-level
 0
 10
-3.0
+4.0
 1
 1
 NIL
@@ -2283,7 +2310,7 @@ max-visiting-time
 max-visiting-time
 5
 100
-30.0
+60.0
 1
 1
 minutes
@@ -2309,7 +2336,7 @@ mean-treatment-time
 mean-treatment-time
 0
 30
-10.0
+15.0
 1
 1
 minutes
@@ -2400,9 +2427,9 @@ visitor-contacts / 2
 
 BUTTON
 1407
-697
+745
 1579
-730
+778
 Transform nodes (CSV)
 transform-nodes
 NIL
@@ -2470,6 +2497,28 @@ scan-movement-directions?
 1
 -1000
 
+MONITOR
+1401
+204
+1570
+249
+Arrival contacts
+round arrival-contacts / 2
+0
+1
+11
+
+MONITOR
+1573
+204
+1757
+249
+Departure contacts
+round departure-contacts / 2
+0
+1
+11
+
 @#$#@#$#@
 ## WHAT IS IT?
 
@@ -2497,6 +2546,7 @@ Testing Environment 6 - Multilevel building with 4 floors and a single stairway
 Testing Environment 7 - UKM single level
 Testing Environment 8 - UKM single level with restricted staff area and one way areas
 Testing Environment 9 - UKM multi level
+Testing Environment 10 - UKM multi level with restricted paths
 
 ## THINGS TO NOTICE
 

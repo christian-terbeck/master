@@ -10,8 +10,8 @@
 "-81.10125",190.23749999999998,false,false,true,1
 "-95.11874999999999",149.18625,false,false,true,1
 "-69.08624999999999",149.18625,true,false,false,1
-"-98.1225",91.11375,false,false,false,1
-"-149.18625",92.115,false,false,true,1
+"-98.1225",91.11375,false,false,true,1
+"-149.18625",92.115,false,false,false,1
 "-150.1875",68.085,true,false,false,1
 "-164.20499999999998",92.115,false,false,true,1
 "-191.23874999999998",76.095,false,false,true,1
@@ -32,8 +32,8 @@
 320.4,192.24,false,false,true,2
 304.38,149.18625,false,false,true,2
 331.41375,149.18625,false,false,false,2
-304.38,90.1125,false,false,false,2
-251.31375,91.11375,false,false,true,2
+304.38,90.1125,false,false,true,2
+251.31375,91.11375,false,false,false,2
 250.3125,70.08749999999999,false,false,false,2
 235.29375,93.11625,false,false,true,2
 206.2575,77.09625,false,false,true,2
@@ -54,8 +54,8 @@
 "-77.09625",-207.25875,false,false,true,3
 "-95.11874999999999",-248.31,false,false,true,3
 "-69.08624999999999",-250.3125,false,false,false,3
-"-96.12",-304.38,false,false,false,3
-"-148.185",-304.38,false,false,true,3
+"-96.12",-304.38,false,false,true,3
+"-148.185",-304.38,false,false,false,3
 "-149.18625",-330.41249999999997,false,false,false,3
 "-164.20499999999998",-304.38,false,false,true,3
 "-192.24",-317.39625,false,false,true,3
@@ -76,8 +76,8 @@
 319.39875,-208.26,false,false,true,4
 302.3775,-248.31,false,false,true,4
 327.40875,-248.31,false,false,false,4
-301.37624999999997,-304.38,false,false,false,4
-249.31125,-304.38,false,false,true,4
+301.37624999999997,-304.38,false,false,true,4
+249.31125,-304.38,false,false,false,4
 248.31,-330.41249999999997,false,false,false,4
 232.29,-304.38,false,false,true,4
 206.2575,-320.4,false,false,true,4
@@ -86,7 +86,7 @@
 99.12375,-327.40875,false,true,false,4
 72.09,-304.38,false,true,false,4
 77.09625,-263.32875,false,true,false,4
-"-131.16375",92.115,true,false,true,1
-264.33,91.11375,false,false,true,2
-"-131.16375",-304.38,false,false,true,3
-265.33125,-304.38,false,false,true,4
+"-131.16375",92.115,true,false,false,1
+264.33,91.11375,false,false,false,2
+"-131.16375",-304.38,false,false,false,3
+265.33125,-304.38,false,false,false,4

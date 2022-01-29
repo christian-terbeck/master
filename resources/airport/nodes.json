@@ -5,7 +5,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-272, -349],
+                "coordinates": [-271, -348],
             },
             "properties": {
                 "isOrigin": true,
@@ -18,7 +18,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-221, -390],
+                "coordinates": [-217, -390],
             },
             "properties": {
                 "isOrigin": false,
@@ -31,7 +31,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-166, -366],
+                "coordinates": [-175, -366],
             },
             "properties": {
                 "isOrigin": true,
@@ -44,7 +44,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-224, -286],
+                "coordinates": [-211, -288],
             },
             "properties": {
                 "isOrigin": false,
@@ -70,7 +70,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-276, -230],
+                "coordinates": [-277, -243],
             },
             "properties": {
                 "isOrigin": true,
@@ -83,7 +83,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-213, -237],
+                "coordinates": [-211, -248],
             },
             "properties": {
                 "isOrigin": false,
@@ -96,7 +96,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-179, -200],
+                "coordinates": [-179, -210],
             },
             "properties": {
                 "isOrigin": true,
@@ -109,7 +109,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-243, -160],
+                "coordinates": [-275, -160],
             },
             "properties": {
                 "isOrigin": false,
@@ -135,7 +135,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-178, -104],
+                "coordinates": [-179, -89],
             },
             "properties": {
                 "isOrigin": false,
@@ -174,12 +174,12 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-232, -8],
+                "coordinates": [-211, 14],
             },
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": true,
+                "hasPublicDisplay": false,
                 "level": 1,
             }
         },
@@ -805,6 +805,45 @@
                 "isDestination": true,
                 "hasPublicDisplay": false,
                 "level": 2,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-240, -160],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": false,
+                "hasPublicDisplay": true,
+                "level": 1,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-205, -160],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": false,
+                "hasPublicDisplay": true,
+                "level": 1,
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-247, -288],
+            },
+            "properties": {
+                "isOrigin": false,
+                "isDestination": false,
+                "hasPublicDisplay": true,
+                "level": 1,
             }
         },
     ]

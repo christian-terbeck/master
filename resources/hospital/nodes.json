@@ -166,7 +166,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": false,
+                "hasPublicDisplay": true,
                 "level": 1,
             }
         },
@@ -179,7 +179,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": true,
+                "hasPublicDisplay": false,
                 "level": 1,
             }
         },
@@ -452,7 +452,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": false,
+                "hasPublicDisplay": true,
                 "level": 2,
             }
         },
@@ -465,7 +465,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": true,
+                "hasPublicDisplay": false,
                 "level": 2,
             }
         },
@@ -738,7 +738,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": false,
+                "hasPublicDisplay": true,
                 "level": 3,
             }
         },
@@ -751,7 +751,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": true,
+                "hasPublicDisplay": false,
                 "level": 3,
             }
         },
@@ -1024,7 +1024,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": false,
+                "hasPublicDisplay": true,
                 "level": 4,
             }
         },
@@ -1037,7 +1037,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": true,
+                "hasPublicDisplay": false,
                 "level": 4,
             }
         },
@@ -1154,7 +1154,7 @@
             "properties": {
                 "isOrigin": true,
                 "isDestination": false,
-                "hasPublicDisplay": true,
+                "hasPublicDisplay": false,
                 "level": 1,
             }
         },
@@ -1167,7 +1167,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": true,
+                "hasPublicDisplay": false,
                 "level": 2,
             }
         },
@@ -1180,7 +1180,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": true,
+                "hasPublicDisplay": false,
                 "level": 3,
             }
         },
@@ -1193,7 +1193,7 @@
             "properties": {
                 "isOrigin": false,
                 "isDestination": false,
-                "hasPublicDisplay": true,
+                "hasPublicDisplay": false,
                 "level": 4,
             }
         },
