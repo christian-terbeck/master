@@ -4,22 +4,6 @@
 ; @description This model simulates the movement of people in indoor environments while considering social forces.
 ;              Public displays are used to guide the people with the aim to reduce contacts between them.
 
-;Todo:
-; - do analysis at 2500, 5000, 7500 and 10000 ticks?
-; - people scale (especially in airport!)
-; - write about Netlogo performance!
-; - use 0 axis in plots, check whether runtime can be further improved..?
-; - focus on small trend in hospital and have good values in airport
-; - further increase probability that staff members stay in their area
-; - have staff members spread evenly on each level!!!
-; - make 90 % of people use elevator; if using stairs take closest stairway
-; - double check display logic
-; - Write in Thesis about backwards compatibility (transformation function to transform data that older versions can run it to - was necessary to do analysis)
-; - Fix bugs (e.g. contact stamps -> also show in Thesis where the contacts occur; for discussion etc.
-; - when doing airport: use patch color of transport bands to increase agent speed, draw paths along them to make movement possible there
-; - https://docs.ropensci.org/nlrx/reference/nlrx-package.html - NetLogo NLRX Package to easily run model from Rstudio and have results plotted!
-; - run r analysis in testing environment
-
 extensions [csv gis]
 
 globals [
@@ -35,7 +19,7 @@ globals [
   output-critical-contacts
   output-unique-contacts
   total-number-of-visitors
-  total-number-of-static-signage-people
+  total-number-of-dynamic-signage-people
   time
   levels
   level-switching-duration
@@ -51,6 +35,8 @@ globals [
   departure-contacts
   contact-distance-values
   contact-distance
+  avg-contact-distance
+  avg-contact-time
   scenario-has-one-way-paths?
   prevent-unnecessary-level-switches?
   last-spawn
@@ -65,7 +51,7 @@ peds-own [
   speedx
   speedy
   is-staff?
-  uses-static-signage?
+  uses-dynamic-signage?
   is-visiting?
   has-visited?
   visit-start
@@ -521,8 +507,8 @@ to set-agents
   ]
 
   if count peds with [(not is-staff?)] > 0 [
-    ask n-of round (static-signage-rate * total-number-of-visitors) peds with [(not is-staff?)] [
-      use-static-signage self
+    ask n-of round (dynamic-signage-rate * total-number-of-visitors) peds with [(not is-staff?)] [
+      use-dynamic-signage self
     ]
   ]
 end
@@ -532,7 +518,7 @@ end
 ; @param int level
 ; @description Creates a new ped and sets its attributes
 
-to create-ped [uses-only-static-signage? is-staff-member? level-number origin-node delay-seconds]
+to create-ped [uses-only-dynamic-signage? is-staff-member? level-number origin-node delay-seconds]
   let x 0
   let y 0
   let tmp-first-node nobody
@@ -576,7 +562,7 @@ to create-ped [uses-only-static-signage? is-staff-member? level-number origin-no
       ]
 
       set color gray
-      set uses-static-signage? true
+      set uses-dynamic-signage? false
     ] [
       ifelse scenario = "airport" [
         set shape "person business"
@@ -585,14 +571,10 @@ to create-ped [uses-only-static-signage? is-staff-member? level-number origin-no
       ]
 
       set color cyan
-      set uses-static-signage? uses-only-static-signage?
+      set uses-dynamic-signage? uses-only-dynamic-signage?
     ]
 
-    ifelse patch-size < 10 [
-      set size 2
-    ] [
-      set size 1
-    ]
+    set size 2 / scale
 
     set xcor x + random-normal 0 0.2
     set ycor y + random-normal 0 0.2
@@ -629,7 +611,7 @@ to create-ped [uses-only-static-signage? is-staff-member? level-number origin-no
 
     set has-visited? false
     set is-waiting? false
-    set waiting-tolerance mean-waiting-tolerance + random-normal 0 120
+    set waiting-tolerance mean-waiting-tolerance + random-normal 0 30
 
     if waiting-tolerance < 10 [
       set waiting-tolerance 10
@@ -681,14 +663,14 @@ to init-ped [k]
   set is-initialized? true
 end
 
-; @method use-static-signage
-; @description This ped will only follow static signage from now on
+; @method use-dynamic-signage
+; @description This ped will only follow dynamic signage from now on
 
-to use-static-signage [k]
-  set uses-static-signage? true
+to use-dynamic-signage [k]
+  set uses-dynamic-signage? true
   set color blue
 
-  set total-number-of-static-signage-people total-number-of-static-signage-people + 1
+  set total-number-of-dynamic-signage-people total-number-of-dynamic-signage-people + 1
 end
 
 ; @method link-nodes
@@ -759,7 +741,7 @@ to init-paths [k node1 node2]
   let path-file-2 word resource-path word "paths/" word [who] of node2 word "-" word [who] of node1 "-a.csv"
 
   if not is-staff? [
-    ifelse not force-all-visitors-to-stick-to-one-ways? and uses-static-signage? [
+    ifelse not force-all-visitors-to-stick-to-one-ways? and not uses-dynamic-signage? [
       set path-file word resource-path word "paths/" word [who] of node1 word "-" word [who] of node2 "-r-s.csv"
       set path-file-2 word resource-path word "paths/" word [who] of node2 word "-" word [who] of node1 "-r-s.csv"
     ] [
@@ -862,7 +844,7 @@ to update-path [k n]
     set number-of-peds-waiting peds-waiting-here
   ]
 
-  ifelse not use-static-signage? and not uses-static-signage? and not is-staff? and current-node-has-display? [
+  ifelse not use-static-signage? and uses-dynamic-signage? and not is-staff? and current-node-has-display? [
     let available-paths paths
 
     let adjacent-nodes []
@@ -1051,7 +1033,7 @@ to set-paths [k origin-nodes]
     let connected-links [my-links] of last i
 
     if not is-staff? [
-      ifelse uses-static-signage? [
+      ifelse not uses-dynamic-signage? [
         set connected-links [my-links with [not is-restricted?]] of last i
       ] [
         set connected-links [my-out-links with [not is-restricted?]] of last i
@@ -1212,6 +1194,7 @@ to trace-contacts
 
       set contact-distance-values contact-distance-values + 1
       set contact-distance contact-distance + (distance myself * scale)
+      set avg-contact-distance contact-distance / contact-distance-values
     ]
 
     foreach active-contacts [x ->
@@ -1227,6 +1210,7 @@ to trace-contacts
           set overall-contact-time overall-contact-time + contact-duration
           set number-of-contacts number-of-contacts + 1
           set overall-contacts overall-contacts + 1
+          set avg-contact-time overall-contact-time / overall-contacts
 
           if show-contacts? [
             stamp
@@ -1451,7 +1435,7 @@ to move [k]
         ]
       ] [
         if has-moved? [
-          ifelse not uses-static-signage? [
+          ifelse uses-dynamic-signage? [
             set paths map [i -> but-first i] (filter [i -> item 1 i = next-node] paths)
             update-path self next-node
           ] [
@@ -1462,8 +1446,14 @@ to move [k]
     ]
   ]
 
-  set xcor xcor + speedx * dt
-  set ycor ycor + speedy * dt
+  carefully [
+    set xcor xcor + speedx * dt
+    set ycor ycor + speedy * dt
+  ] [
+    if show-logs? [
+      print word self " cannot move beyond the world`s edge"
+    ]
+  ]
 
   if not has-moved? [
     set has-moved? true
@@ -1482,8 +1472,8 @@ to simulate
   ask peds [
     ifelse not is-initialized? [
       if (init-delay < 1) or ((time - created-at) > init-delay) [
-        if static-signage-rate > 0 and ((total-number-of-static-signage-people > 0 and total-number-of-visitors > 0 and total-number-of-static-signage-people / total-number-of-visitors < static-signage-rate) or total-number-of-static-signage-people < 1) [
-          use-static-signage self
+        if dynamic-signage-rate > 0 and ((total-number-of-dynamic-signage-people > 0 and total-number-of-visitors > 0 and total-number-of-dynamic-signage-people / total-number-of-visitors < dynamic-signage-rate) or total-number-of-dynamic-signage-people < 1) [
+          use-dynamic-signage self
         ]
 
         init-ped self
@@ -1503,7 +1493,7 @@ to simulate
     ifelse scenario = "airport" [
       create-ped false false 2 nobody 0
     ] [
-      ifelse scenario = "hospital" [
+      ifelse scenario = "hospital" and random 20 != 10 [
         create-ped false false -1 node 88 0
       ] [
         create-ped false false -1 nobody 0
@@ -1562,11 +1552,11 @@ end
 GRAPHICS-WINDOW
 384
 10
-1385
-820
+1314
+941
 -1
 -1
-0.9
+22.5
 1
 10
 1
@@ -1576,10 +1566,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--500
-500
--400
-400
+-20
+20
+-20
+20
 0
 0
 1
@@ -1644,8 +1634,8 @@ V0
 V0
 0
 5
-1.0
-1
+1.2
+0.1
 1
 NIL
 HORIZONTAL
@@ -1727,8 +1717,8 @@ SLIDER
 A
 A
 0
-1
-1.0
+5
+2.0
 .1
 1
 NIL
@@ -1743,7 +1733,7 @@ Tr
 Tr
 .1
 2
-1.0
+1.3
 .1
 1
 NIL
@@ -1754,11 +1744,11 @@ SLIDER
 156
 363
 189
-static-signage-rate
-static-signage-rate
+dynamic-signage-rate
+dynamic-signage-rate
 0
 1
-0.0
+1.0
 .05
 1
 NIL
@@ -1870,7 +1860,7 @@ MONITOR
 1578
 298
 Avg. contact duration (s)
-overall-contact-time / overall-contacts
+avg-contact-time
 3
 1
 11
@@ -1881,7 +1871,7 @@ MONITOR
 1757
 298
 Avg. contact distance (m)
-contact-distance / contact-distance-values
+avg-contact-distance
 3
 1
 11
@@ -1915,7 +1905,7 @@ SWITCH
 685
 show-circles?
 show-circles?
-0
+1
 1
 -1000
 
@@ -1939,7 +1929,7 @@ area-of-awareness
 area-of-awareness
 1
 50
-25.0
+10.0
 0.5
 1
 meters
@@ -1986,7 +1976,7 @@ CHOOSER
 scenario
 scenario
 "hospital" "airport" "testing-environment-1" "testing-environment-2" "testing-environment-3" "testing-environment-4" "testing-environment-5" "testing-environment-6" "testing-environment-7" "testing-environment-8" "testing-environment-9" "testing-environment-10"
-1
+2
 
 SWITCH
 1407
@@ -2194,7 +2184,7 @@ spawn-rate
 spawn-rate
 0
 1000
-180.0
+60.0
 1
 1
 seconds
@@ -2246,7 +2236,7 @@ mean-visiting-time
 mean-visiting-time
 5
 100
-45.0
+5.0
 1
 1
 minutes
@@ -2295,7 +2285,7 @@ staff-members-per-level
 staff-members-per-level
 0
 10
-4.0
+0.0
 1
 1
 NIL
@@ -2323,7 +2313,7 @@ SWITCH
 287
 staff-switches-levels?
 staff-switches-levels?
-1
+0
 1
 -1000
 
@@ -2398,7 +2388,7 @@ mean-passenger-number
 mean-passenger-number
 0
 1000
-50.0
+90.0
 1
 1
 passengers
@@ -2493,7 +2483,7 @@ SWITCH
 589
 scan-movement-directions?
 scan-movement-directions?
-1
+0
 1
 -1000
 
@@ -2536,7 +2526,7 @@ To initialize the simulation, select a scenario, choose your preferences and cli
 ## THE SCENARIOS
 
 Hospital - UKM in Münster
-Airport - Amsterdam Schiphol
+Airport - Terminal A of Düsseldorf International Airport
 Testing Environment 1 - Basic Grid
 Testing Environment 2 - Basic Grid with one way system
 Testing Environment 3 - Basic Grid with mixture of one ways and regular paths

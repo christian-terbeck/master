@@ -44,7 +44,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-151, 275],
+                "coordinates": [-150, 269],
             },
             "properties": {
                 "isOrigin": false,
@@ -96,7 +96,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-93, 270],
+                "coordinates": [-94, 268],
             },
             "properties": {
                 "isOrigin": false,
@@ -161,7 +161,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [-98, 91],
+                "coordinates": [-94, 92],
             },
             "properties": {
                 "isOrigin": false,
@@ -330,7 +330,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [250, 273],
+                "coordinates": [248, 270],
             },
             "properties": {
                 "isOrigin": false,
@@ -343,7 +343,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [268, 322],
+                "coordinates": [261, 320],
             },
             "properties": {
                 "isOrigin": false,
@@ -356,7 +356,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [317, 323],
+                "coordinates": [308, 323],
             },
             "properties": {
                 "isOrigin": false,
@@ -382,7 +382,7 @@
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [309, 271],
+                "coordinates": [306, 269],
             },
             "properties": {
                 "isOrigin": false,

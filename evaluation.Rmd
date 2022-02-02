@@ -66,13 +66,13 @@ Set up the experiment based on the NetLogo model.
 nl@experiment <- experiment(expname = "hospital",
                             outpath = outpath,
                             repetition = 1,
-                            tickmetrics = "false",
+                            tickmetrics = "true",
                             idsetup = "setup",
                             idgo = "simulate",
                             runtime = 20000,
-                            evalticks = seq(5000),
-                            metrics = c("time", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round no-staff-only-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "overall-contact-time / overall-contacts", "contact-distance / contact-distance-values"),
-                            variables = list("static-signage-rate"= list(values = c(0, 0.25, 0.5, 0.75, 1))),
+                            evalticks = c(5000, 10000, 15000, 20000),
+                            metrics = c("time", "dynamic-signage-rate * 100", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round no-staff-only-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "avg-contact-time", "avg-contact-distance", "total-number-of-visitors"),
+                            variables = list("dynamic-signage-rate"= list(values = c(0, 0.25, 0.5, 0.75, 1))),
                             constants = list("scenario" = "\"hospital\"",
                                              "dt" = 1,
                                              "V0" = 1,
@@ -80,7 +80,7 @@ nl@experiment <- experiment(expname = "hospital",
                                              "D" = 2,
                                              "Tr" = 1,
                                              "initial-number-of-visitors" = 0,
-                                             "staff-members-per-level" = 3,
+                                             "staff-members-per-level" = 4,
                                              "staff-switches-levels?" = "false",
                                              "spawn-rate" = 180,
                                              "mean-treatment-time" = 15,
@@ -90,7 +90,7 @@ nl@experiment <- experiment(expname = "hospital",
                                              "area-of-awareness" = 10,
                                              "angle-of-awareness" = 15,
                                              "use-stop-feature?" = "true",
-                                             "mean-waiting-tolerance" = 600,
+                                             "mean-waiting-tolerance" = 195,
                                              "show-areas-of-awareness?" = "false",
                                              "use-static-signage?" = "false",
                                              "consider-people-at-adjacent-displays?" = "true",
@@ -122,7 +122,7 @@ eval_variables_constants(nl)
 Set up simulation design:
   
 ```
-nl@simdesign <- simdesign_distinct(nl = nl, nseeds = 10)
+nl@simdesign <- simdesign_distinct(nl = nl, nseeds = 30)
 ```
 
 Check for errors again:
@@ -157,8 +157,8 @@ nl@experiment <- experiment(expname = "hospital",
                             idgo = "simulate",
                             runtime = 20000,
                             evalticks = seq(5000),
-                            metrics = c("time", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round no-staff-only-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "overall-contact-time / overall-contacts", "contact-distance / contact-distance-values"),
-                            variables = list("static-signage-rate" = list(min = 0, max = 1, qfun = "qunif")),
+                            metrics = c("time", "dynamic-signage-rate * 100", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round no-staff-only-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "avg-contact-time", "avg-contact-distance", "total-number-of-visitors"),
+                            variables = list("dynamic-signage-rate" = list(min = 0, max = 1, qfun = "qunif")),
                             constants = list("scenario" = "\"hospital\"",
                                              "dt" = 1,
                                              "V0" = 1,
@@ -166,7 +166,7 @@ nl@experiment <- experiment(expname = "hospital",
                                              "D" = 2,
                                              "Tr" = 1,
                                              "initial-number-of-visitors" = 0,
-                                             "staff-members-per-level" = 3,
+                                             "staff-members-per-level" = 4,
                                              "staff-switches-levels?" = "false",
                                              "spawn-rate" = 180,
                                              "mean-treatment-time" = 15,
@@ -176,12 +176,12 @@ nl@experiment <- experiment(expname = "hospital",
                                              "area-of-awareness" = 10,
                                              "angle-of-awareness" = 15,
                                              "use-stop-feature?" = "true",
-                                             "mean-waiting-tolerance" = 600,
+                                             "mean-waiting-tolerance" = 195,
                                              "show-areas-of-awareness?" = "false",
                                              "use-static-signage?" = "false",
                                              "consider-people-at-adjacent-displays?" = "true",
                                              "force-all-visitors-to-stick-to-one-ways?" = "true",
-                                             "scan-movement-directions?" = "false",
+                                             "scan-movement-directions?" = "true",
                                              "contact-radius" = 1.5,
                                              "critical-period" = 15,
                                              "contact-tolerance" = 2,
@@ -207,6 +207,70 @@ nl@simdesign <- simdesign_lhs(nl=nl,
                               nseeds=10,
                               precision=3)
 ```
+Experiment setup for area of awareness optimization
+
+```
+nl@experiment <- experiment(expname = "hospital",
+                            outpath = outpath,
+                            repetition = 1,
+                            tickmetrics = "false",
+                            idsetup = "setup",
+                            idgo = "simulate",
+                            runtime = 20000,
+                            evalticks = seq(5000),
+                            metrics = c("time", "dynamic-signage-rate * 100", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round no-staff-only-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "avg-contact-time", "avg-contact-distance", "total-number-of-visitors"),
+                            variables = list("area-of-awareness" = list(min = 5, max = 15, qfun = "qunif")),
+                            constants = list("scenario" = "\"hospital\"",
+                                             "dt" = 1,
+                                             "V0" = 1,
+                                             "A" = 1,
+                                             "D" = 2,
+                                             "Tr" = 1,
+                                             "dynamic-signage-rate" = 1,
+                                             "initial-number-of-visitors" = 0,
+                                             "staff-members-per-level" = 4,
+                                             "staff-switches-levels?" = "false",
+                                             "spawn-rate" = 180,
+                                             "mean-treatment-time" = 15,
+                                             "mean-visiting-time" = 45,
+                                             "max-visiting-time" = 60,
+                                             "max-capacity" = 120,
+                                             "angle-of-awareness" = 15,
+                                             "use-stop-feature?" = "true",
+                                             "mean-waiting-tolerance" = 195,
+                                             "show-areas-of-awareness?" = "false",
+                                             "use-static-signage?" = "false",
+                                             "consider-people-at-adjacent-displays?" = "true",
+                                             "force-all-visitors-to-stick-to-one-ways?" = "true",
+                                             "scan-movement-directions?" = "true",
+                                             "contact-radius" = 1.5,
+                                             "critical-period" = 15,
+                                             "contact-tolerance" = 2,
+                                             "show-circles?" = "false",
+                                             "show-paths?" = "false",
+                                             "show-walking-paths?" = "false",
+                                             "show-logs?" = "false",
+                                             "show-contacts?" = "false",
+                                             "show-labels?" = "false",
+                                             "enable-gis-extension?" = "false",
+                                             "write-output?" = "false",
+                                             "output-steps" = 1000,
+                                             "stop-at-ticks" = 0,
+                                             "gate-open-period" = 0,
+                                             "mean-passenger-number" = 0))
+```
+
+Sobol sensitivity analysis for parameter optimization:
+
+```
+nl@simdesign <- simdesign_sobol(nl=nl,
+                                samples=10,
+                                sobolorder=1,
+                                sobolnboot=100,
+                                sobolconf=0.95,
+                                nseeds=3,
+                                precision=3)
+```
 
 Check for errors again:
 
@@ -217,7 +281,7 @@ print(nl)
 Compute results:
 
 ```
-analysis <- run_nl_all(nl = nl)
+analysis_hospital <- run_nl_all(nl = nl)
 ```
 
 Transfer results to another variable again:
@@ -236,28 +300,28 @@ Set up the experiment based on the NetLogo model.
 nl@experiment <- experiment(expname = "airport",
                             outpath = outpath,
                             repetition = 1,
-                            tickmetrics = "false",
+                            tickmetrics = "true",
                             idsetup = "setup",
                             idgo = "simulate",
                             runtime = 20000,
-                            evalticks = seq(5000),
-                            metrics = c("time", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round no-staff-only-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "round arrival-contacts / 2", "round departure-contacts / 2", "overall-contact-time / overall-contacts", "contact-distance / contact-distance-values"),
-                            variables = list("static-signage-rate"= list(values = c(0, 0.25, 0.5, 0.75, 1))),
-                            constants = list("scenario" = "\"hospital\"",
+                            evalticks = c(5000, 10000, 15000, 20000),
+                            metrics = c("time", "dynamic-signage-rate * 100", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round no-staff-only-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "round arrival-contacts / 2", "round departure-contacts / 2", "avg-contact-time", "avg-contact-distance", "total-number-of-visitors"),
+                            variables = list("dynamic-signage-rate"= list(values = c(0, 0.25, 0.5, 0.75, 1))),
+                            constants = list("scenario" = "\"airport\"",
                                              "dt" = 1,
-                                             "V0" = 1,
-                                             "A" = 1,
+                                             "V0" = 1.2,
+                                             "A" = 2,
                                              "D" = 2,
-                                             "Tr" = 1,
+                                             "Tr" = 1.3,
                                              "initial-number-of-visitors" = 0,
                                              "staff-members-per-level" = 0,
                                              "staff-switches-levels?" = "false",
-                                             "spawn-rate" = 20,
+                                             "spawn-rate" = 4,
                                              "mean-treatment-time" = 0,
                                              "mean-visiting-time" = 0,
                                              "max-visiting-time" = 0,
                                              "max-capacity" = 2000,
-                                             "area-of-awareness" = 25,
+                                             "area-of-awareness" = 22,
                                              "angle-of-awareness" = 15,
                                              "use-stop-feature?" = "false",
                                              "mean-waiting-tolerance" = 600,
@@ -280,7 +344,7 @@ nl@experiment <- experiment(expname = "airport",
                                              "output-steps" = 1000,
                                              "stop-at-ticks" = 0,
                                              "gate-open-period" = 6,
-                                             "mean-passenger-number" = 40))
+                                             "mean-passenger-number" = 110))
 ```
 
 Check if all variables and constants are assigned correctly:
@@ -292,7 +356,7 @@ eval_variables_constants(nl)
 Set up simulation design:
   
 ```
-nl@simdesign <- simdesign_distinct(nl = nl, nseeds = 10)
+nl@simdesign <- simdesign_distinct(nl = nl, nseeds = 30)
 ```
 
 Check for errors again:
@@ -327,23 +391,23 @@ nl@experiment <- experiment(expname = "airport",
                             idgo = "simulate",
                             runtime = 20000,
                             evalticks = seq(5000),
-                            metrics = c("time", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round no-staff-only-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "round arrival-contacts / 2", "round departure-contacts / 2", "overall-contact-time / overall-contacts", "contact-distance / contact-distance-values"),
-                            variables = list("static-signage-rate" = list(min = 0, max = 1, qfun = "qunif")),
-                            constants = list("scenario" = "\"hospital\"",
+                            metrics = c("time", "dynamic-signage-rate * 100", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round no-staff-only-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "round arrival-contacts / 2", "round departure-contacts / 2", "avg-contact-time", "avg-contact-distance", "total-number-of-visitors"),
+                            variables = list("dynamic-signage-rate" = list(min = 0, max = 1, qfun = "qunif")),
+                            constants = list("scenario" = "\"airport\"",
                                              "dt" = 1,
-                                             "V0" = 1,
-                                             "A" = 1,
+                                             "V0" = 1.2,
+                                             "A" = 2,
                                              "D" = 2,
-                                             "Tr" = 1,
+                                             "Tr" = 1.3,
                                              "initial-number-of-visitors" = 0,
                                              "staff-members-per-level" = 0,
                                              "staff-switches-levels?" = "false",
-                                             "spawn-rate" = 20,
+                                             "spawn-rate" = 4,
                                              "mean-treatment-time" = 0,
                                              "mean-visiting-time" = 0,
                                              "max-visiting-time" = 0,
                                              "max-capacity" = 2000,
-                                             "area-of-awareness" = 25,
+                                             "area-of-awareness" = 22,
                                              "angle-of-awareness" = 15,
                                              "use-stop-feature?" = "false",
                                              "mean-waiting-tolerance" = 600,
@@ -366,7 +430,7 @@ nl@experiment <- experiment(expname = "airport",
                                              "output-steps" = 1000,
                                              "stop-at-ticks" = 0,
                                              "gate-open-period" = 6,
-                                             "mean-passenger-number" = 40))
+                                             "mean-passenger-number" = 110))
 ```
 
 Latin hypercube sampling (sensitivity analysis):
@@ -375,6 +439,70 @@ Latin hypercube sampling (sensitivity analysis):
 nl@simdesign <- simdesign_lhs(nl=nl,
                               samples=5,
                               nseeds=10,
+                              precision=3)
+```
+Prepare experiment for airport area of awareness optimization:
+
+```
+nl@experiment <- experiment(expname = "airport",
+                            outpath = outpath,
+                            repetition = 1,
+                            tickmetrics = "false",
+                            idsetup = "setup",
+                            idgo = "simulate",
+                            runtime = 20000,
+                            evalticks = seq(5000),
+                            metrics = c("time", "dynamic-signage-rate * 100", "round overall-contacts / 2", "round visitor-contacts / 2", "round visitor-staff-contacts / 2", "round staff-contacts / 2", "round no-staff-only-contacts / 2", "round unique-contacts / 2", "round critical-contacts / 2", "round arrival-contacts / 2", "round departure-contacts / 2", "avg-contact-time", "avg-contact-distance", "total-number-of-visitors"),
+                            variables = list("area-of-awareness" = list(min = 10, max = 30, qfun = "qunif")),
+                            constants = list("scenario" = "\"airport\"",
+                                             "dt" = 1,
+                                             "V0" = 1.2,
+                                             "A" = 2,
+                                             "D" = 2,
+                                             "Tr" = 1.3,
+                                             "dynamic-signage-rate" = 1,
+                                             "initial-number-of-visitors" = 0,
+                                             "staff-members-per-level" = 0,
+                                             "staff-switches-levels?" = "false",
+                                             "spawn-rate" = 4,
+                                             "mean-treatment-time" = 0,
+                                             "mean-visiting-time" = 0,
+                                             "max-visiting-time" = 0,
+                                             "max-capacity" = 2000,
+                                             "angle-of-awareness" = 15,
+                                             "use-stop-feature?" = "false",
+                                             "mean-waiting-tolerance" = 600,
+                                             "show-areas-of-awareness?" = "false",
+                                             "use-static-signage?" = "false",
+                                             "consider-people-at-adjacent-displays?" = "true",
+                                             "force-all-visitors-to-stick-to-one-ways?" = "true",
+                                             "scan-movement-directions?" = "true",
+                                             "contact-radius" = 1.5,
+                                             "critical-period" = 15,
+                                             "contact-tolerance" = 2,
+                                             "show-circles?" = "false",
+                                             "show-paths?" = "false",
+                                             "show-walking-paths?" = "false",
+                                             "show-logs?" = "false",
+                                             "show-contacts?" = "false",
+                                             "show-labels?" = "false",
+                                             "enable-gis-extension?" = "false",
+                                             "write-output?" = "false",
+                                             "output-steps" = 1000,
+                                             "stop-at-ticks" = 0,
+                                             "gate-open-period" = 6,
+                                             "mean-passenger-number" = 110))
+```
+
+Sobol sensitivity analysis for parameter optimization:
+
+```
+nl@simdesign <- simdesign_sobol(nl=nl,
+                              samples=10,
+                              sobolorder=1,
+                              sobolnboot=100,
+                              sobolconf=0.95,
+                              nseeds=3,
                               precision=3)
 ```
 
@@ -387,7 +515,7 @@ print(nl)
 Compute results:
   
 ```
-analysis <- run_nl_all(nl = nl)
+analysis_airport <- run_nl_all(nl = nl)
 ```
 
 Transfer results to another variable again:
@@ -398,11 +526,15 @@ analysis_airport <- analysis
 
 ### Plot results
 
+```
+results <- analysis_airport
+```
+
 As a regular plot:
 
 ```
-plot(results$`static-signage-rate`, results$`round overall-contacts / 2`,
-     xlab="People who follow static signage (%)",
+plot(results$`dynamic-signage-rate * 100`, results$`round overall-contacts / 2`,
+     xlab="People who follow dynamic signage (%)",
      ylab="Contacts",
      main="Overall contacts")
 ```
@@ -410,10 +542,33 @@ plot(results$`static-signage-rate`, results$`round overall-contacts / 2`,
 And as a boxplot:
 
 ```
-boxplot(results_airport$`round overall-contacts / 2`~results_airport$`static-signage-rate`,
-     xlab="People who follow static signage (%)",
+boxplot(results$`round overall-contacts / 2`~results$`dynamic-signage-rate * 100`,
+     xlab="People who follow dynamic signage (%)",
      ylab="Contacts",
      main="Overall contacts")
+```
+
+If multiple records have been created that result in several timesteps in one dataset, you may want to use (adjust the lines to your needs to specify the values you would like to investigate):
+  
+```
+step <- 20000
+results <- results_hospital
+```
+
+```
+plot(results[results$`[step]` == step,]$`dynamic-signage-rate * 100`, results[results$`[step]` == step,]$`round overall-contacts / 2`,
+     xlab="People who follow dynamic signage (%)",
+     ylab="Contacts",
+     main="Overall contacts")
+```
+
+And for boxplot:
+  
+```
+boxplot(results[results$`[step]` == step,]$`round overall-contacts / 2`~results[results$`[step]` == step,]$`dynamic-signage-rate * 100`,
+        xlab="People who follow dynamic signage (%)",
+        ylab="Contacts",
+        main="Overall contacts")
 ```
 
 In case of different scenarios you may also want to create different plots.

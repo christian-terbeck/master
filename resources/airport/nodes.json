@@ -307,9 +307,9 @@
                 "coordinates": [201, -387],
             },
             "properties": {
-                "isOrigin": true,
-                "isDestination": false,
-                "hasPublicDisplay": true,
+                "isOrigin": false,
+                "isDestination": true,
+                "hasPublicDisplay": false,
                 "level": 2,
             }
         },
